@@ -19,5 +19,7 @@ public class MainActivity extends AppCompatActivity {
     @StateMachine
     private static class MainViewStateMachine {
 
+        public static final int FLAG = 1;
+
     }
 }
