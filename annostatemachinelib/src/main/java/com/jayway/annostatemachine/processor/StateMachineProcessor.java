@@ -46,6 +46,8 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void generateStateMachine(Element element, RoundEnvironment roundEnv) {
+        String packageOfStateMachineSource = ((TypeElement)element).getQualifiedName().toString();
+
         String generatedPackage = Constants.libPackageName + ".generated";
         String generatedClassName = element.getSimpleName() + GENERATED_FILE_SUFFIX;
         String generatedClassFullPath = generatedPackage + "." + generatedClassName;
@@ -60,9 +62,9 @@ public class StateMachineProcessor extends AbstractProcessor {
                 StringBuilder sb = new StringBuilder();
 
                 javaWriter.emitPackage(generatedPackage);
+                javaWriter.emitImports(packageOfStateMachineSource);
                 javaWriter.emitEmptyLine();
-                javaWriter.beginType(generatedClassName, "class", EnumSet.of(Modifier.PUBLIC));
-                javaWriter.emitEmptyLine();
+                javaWriter.beginType(generatedClassName, "class", EnumSet.of(Modifier.PUBLIC), element.getSimpleName().toString());
 
                 generateStates(element, writer, javaWriter);
 
@@ -80,20 +82,19 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void generateStates(Element element, Writer writer, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.emitSingleLineComment("--- State list ---");
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (enclosedElement.getAnnotation(State.class) == null) {
-                // Pass through code without changing anything
-                if (enclosedElement.getKind() != ElementKind.CONSTRUCTOR) {
-                    javaWriter.emitSingleLineComment("Pass through " + enclosedElement.getKind());
-                    processingEnv.getElementUtils().printElements(writer, enclosedElement);
-                }
-            } else if (!(element.getKind() == ElementKind.METHOD)) {
+                // Not a state
+            } else if (!(enclosedElement.getKind() == ElementKind.METHOD)) {
+                // State annotation on something other than a method
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                         "Non method " + enclosedElement.getSimpleName() + " using annotation " + State.class.getSimpleName());
             } else {
-                writer.write(NEWLINE + "// Found state\n");
-                processingEnv.getElementUtils().printElements(writer, enclosedElement);
+                javaWriter.emitSingleLineComment(enclosedElement.getSimpleName().toString());
             }
         }
+        javaWriter.emitSingleLineComment("--- End of state list ---");
     }
 }
