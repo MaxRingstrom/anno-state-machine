@@ -3,11 +3,19 @@ package com.jayway.annostatemachine;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
+import com.jayway.annostatemachine.annotations.StateMachine;
+
 public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+    }
+
+    @StateMachine
+    private static class TestMachine {
+
     }
 }
