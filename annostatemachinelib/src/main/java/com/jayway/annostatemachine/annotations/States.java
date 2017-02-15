@@ -1,5 +1,5 @@
 package com.jayway.annostatemachine.annotations;
 
 
-public @interface State {
+public @interface States {
 }

@@ -1,4 +1,4 @@
 package com.jayway.annostatemachine.annotations;
 
-public @interface Signal {
+public @interface Signals {
 }
