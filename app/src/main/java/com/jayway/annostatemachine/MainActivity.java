@@ -35,11 +35,6 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onUnhandledSignal(Object o, Object o1) {
-                Log.d(TAG, "Signal " + o1 + " not handled in state " + o);
-            }
-
-            @Override
             public void onChangingState(Object o, Object o1) {
                 Log.d(TAG, "State switch from " + o + " to " + o1);
             }
@@ -108,6 +103,18 @@ public class MainActivity extends AppCompatActivity {
             mNextButton.setVisibility(View.INVISIBLE);
 
             // We do not have a guard on this connection so we always return true
+            return true;
+        }
+
+        @Connection(from = "*", to ="ERROR", signal = "START")
+        public boolean onUnhandledStartSignal(SignalPayload payload) {
+            Log.d(TAG, "Global handler with to state that is not overridden for the current state");
+            return true;
+        }
+
+        @Connection(from = "*", to ="*", signal = "START")
+        public boolean onStartEavesdropSignal(SignalPayload payload) {
+            Log.d(TAG, "Eavesdrop handler without to state should run before normal handling and global handling");
             return true;
         }
 

@@ -41,9 +41,8 @@ import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
 // Notes
-// Add general signal handler that has no from ( can be triggered from all states )
-// Add general signal handler that has no to ( is triggered but doesn't result in a state switch )
 // Add general signal handler that can act on multiple from states
+// Add wildcard for signal so that all signals in a state or global context results in a trigger
 // Add a general signal handler that acts on all signals in one, several or all states with or without to state.
 
 @SupportedAnnotationTypes("com.jayway.annostatemachine.annotations.StateMachine")
@@ -111,6 +110,7 @@ public class StateMachineProcessor extends AbstractProcessor {
                 generateSignalDispatcher(javaWriter);
 
                 generateSignalHandlersForStates(javaWriter);
+                generateGlobalSignalHandler(javaWriter);
 
                 generateSendMethods(javaWriter);
                 generateSwitchStateMethod(javaWriter);
@@ -126,6 +126,36 @@ public class StateMachineProcessor extends AbstractProcessor {
                     "Couldn't create generated state machine class: " + generatedClassName);
             e.printStackTrace();
         }
+    }
+
+    private void generateGlobalSignalHandler(JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod(mModel.getStatesEnumName(), "handleGlobalSignal", EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+
+        ArrayList<ConnectionRef> wildcardToConnections = new ArrayList<>();
+        ArrayList<ConnectionRef> explicitToConnections = new ArrayList<>();
+        for (ConnectionRef connection : mModel.mGlobalConnections) {
+            if (connection.getTo().equals(ConnectionRef.WILDCARD)) {
+                wildcardToConnections.add(connection);
+            } else {
+                explicitToConnections.add(connection);
+            }
+        }
+        for (ConnectionRef wildCardConnection : wildcardToConnections) {
+            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + wildCardConnection.getSignal() + "))");
+            javaWriter.emitStatement("%s(payload)", wildCardConnection.getName());
+            javaWriter.endControlFlow();
+        }
+        for (ConnectionRef explicitToConnection : explicitToConnections) {
+            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + explicitToConnection.getSignal() + "))");
+            javaWriter.emitStatement("if (%s(payload)) return %s", explicitToConnection.getName(), mModel.getStatesEnumName() + "." + explicitToConnection.getTo());
+            javaWriter.endControlFlow();
+        }
+
+        javaWriter.emitStatement("return null");
+
+        javaWriter.endMethod();
+
     }
 
     private void validateModel() {
@@ -276,8 +306,10 @@ public class StateMachineProcessor extends AbstractProcessor {
                 javaWriter.endControlFlow();
             }
         }
-        javaWriter.emitStatement("mEventListener.onUnhandledSignal(mCurrentState, signal)");
-        javaWriter.emitStatement("return null");
+
+        javaWriter.emitStatement(mModel.getStatesEnumName() + " nextState = handleGlobalSignal(signal, payload)");
+
+        javaWriter.emitStatement("return nextState");
         javaWriter.endMethod();
     }
 
@@ -382,6 +414,7 @@ public class StateMachineProcessor extends AbstractProcessor {
 
         private ArrayList<SignalRef> mSignals = new ArrayList<>();
         private HashMap<String, ArrayList<ConnectionRef>> mStateToConnectionsMap = new HashMap<>();
+        private ArrayList<ConnectionRef> mGlobalConnections = new ArrayList<>();
         private ArrayList<StateRef> mStates = new ArrayList<>();
 
         private String mSignalsEnumClassQualifiedName;
@@ -411,12 +444,16 @@ public class StateMachineProcessor extends AbstractProcessor {
         }
 
         public void add(ConnectionRef connection) {
-            ArrayList<ConnectionRef> connectionsForFromState = mStateToConnectionsMap.get(connection.getFrom());
-            if (connectionsForFromState == null) {
-                connectionsForFromState = new ArrayList<>();
+            if (ConnectionRef.WILDCARD.equals(connection.getFrom())) {
+                mGlobalConnections.add(connection);
+            } else {
+                ArrayList<ConnectionRef> connectionsForFromState = mStateToConnectionsMap.get(connection.getFrom());
+                if (connectionsForFromState == null) {
+                    connectionsForFromState = new ArrayList<>();
+                }
+                connectionsForFromState.add(connection);
+                mStateToConnectionsMap.put(connection.getFrom(), connectionsForFromState);
             }
-            connectionsForFromState.add(connection);
-            mStateToConnectionsMap.put(connection.getFrom(), connectionsForFromState);
         }
 
         public void add(StateRef state) {

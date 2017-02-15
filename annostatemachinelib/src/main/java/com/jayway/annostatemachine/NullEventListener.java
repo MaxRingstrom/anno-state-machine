@@ -7,11 +7,6 @@ public class NullEventListener implements StateMachineEventListener {
     }
 
     @Override
-    public void onUnhandledSignal(Object currentState, Object signal) {
-
-    }
-
-    @Override
     public void onChangingState(Object currentState, Object nextState) {
 
     }
