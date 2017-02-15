@@ -47,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         stateMachine.send(MainViewStateMachine.Signal.START, null);
         // intentional duplicate in order to see that unhandled signals are reported
         stateMachine.send(MainViewStateMachine.Signal.START, null);
+
         mHandler = new Handler(getMainLooper());
         mHandler.postDelayed(new Runnable() {
             @Override

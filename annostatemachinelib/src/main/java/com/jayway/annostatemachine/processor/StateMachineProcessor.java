@@ -40,6 +40,12 @@ import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
+// Notes
+// Add general signal handler that has no from ( can be triggered from all states )
+// Add general signal handler that has no to ( is triggered but doesn't result in a state switch )
+// Add general signal handler that can act on multiple from states
+// Add a general signal handler that acts on all signals in one, several or all states with or without to state.
+
 @SupportedAnnotationTypes("com.jayway.annostatemachine.annotations.StateMachine")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 public class StateMachineProcessor extends AbstractProcessor {
