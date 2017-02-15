@@ -59,8 +59,9 @@ public class StateMachineProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (Element element : roundEnv.getElementsAnnotatedWith(StateMachine.class)) {
+            // Clean model for each statemachine source file
+            mModel = new Model();
             if (element.getKind().isClass()) {
-
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
                         "Statemachine found: " + ((TypeElement)element).getQualifiedName().toString());
                 generateStateMachine(element, roundEnv);
@@ -75,7 +76,21 @@ public class StateMachineProcessor extends AbstractProcessor {
     private void generateStateMachine(Element element, RoundEnvironment roundEnv) {
         mStateMachineSourceQualifiedName = ((TypeElement) element).getQualifiedName().toString();
 
-        String generatedPackage = Constants.libPackageName + ".generated";
+        Element topElement = element;
+        while (((TypeElement) topElement).getNestingKind().isNested()) {
+            topElement = element.getEnclosingElement();
+        }
+
+        String topElementQualifiedName = ((TypeElement)topElement).getQualifiedName().toString();
+
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Top element qualified name: " + topElementQualifiedName);
+
+        String sourceClassPackage = topElementQualifiedName.substring(0, topElementQualifiedName.lastIndexOf("."));
+
+        String generatedPackage = sourceClassPackage + ".generated";
+
+        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Target generated package: " + generatedPackage);
+
         String generatedClassName = element.getSimpleName() + GENERATED_FILE_SUFFIX;
         String generatedClassFullPath = generatedPackage + "." + generatedClassName;
 
@@ -255,6 +270,11 @@ public class StateMachineProcessor extends AbstractProcessor {
     private void generateSendMethods(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+
+        javaWriter.beginControlFlow("if (mWaitingForInit)");
+        javaWriter.emitStatement("throw new IllegalStateException(\"Missing call to init\")");
+        javaWriter.endControlFlow();
+
         javaWriter.emitStatement(mModel.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
         javaWriter.beginControlFlow("if (nextState != null)");
         javaWriter.emitStatement("switchState(nextState)");
@@ -316,6 +336,7 @@ public class StateMachineProcessor extends AbstractProcessor {
     private void generateFields(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.emitField(mModel.getStatesEnumName(), "mCurrentState", EnumSet.of(Modifier.PRIVATE));
+        javaWriter.emitField("boolean", "mWaitingForInit", EnumSet.of(Modifier.PRIVATE), "true");
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
     }
 
@@ -324,6 +345,7 @@ public class StateMachineProcessor extends AbstractProcessor {
         javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), mModel.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener");
         javaWriter.emitStatement("mCurrentState = startingState");
         javaWriter.emitStatement("mEventListener = eventListener != null ? eventListener : new NullEventListener()");
+        javaWriter.emitStatement("mWaitingForInit = false");
         javaWriter.endMethod();
     }
 
