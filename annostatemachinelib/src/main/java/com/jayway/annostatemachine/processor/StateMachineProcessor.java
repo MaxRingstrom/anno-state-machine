@@ -47,13 +47,15 @@ public class StateMachineProcessor extends AbstractProcessor {
     private static final String GENERATED_FILE_SUFFIX = "Impl";
 
     private Model mModel = new Model();
+    private String mStateMachineSourceQualifiedName;
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (Element element : roundEnv.getElementsAnnotatedWith(StateMachine.class)) {
             if (element.getKind().isClass()) {
+
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
-                        "Statemachine found: " + element.getSimpleName());
+                        "Statemachine found: " + ((TypeElement)element).getQualifiedName().toString());
                 generateStateMachine(element, roundEnv);
             } else {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
@@ -64,7 +66,7 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void generateStateMachine(Element element, RoundEnvironment roundEnv) {
-        String packageOfStateMachineSource = ((TypeElement) element).getQualifiedName().toString();
+        mStateMachineSourceQualifiedName = ((TypeElement) element).getQualifiedName().toString();
 
         String generatedPackage = Constants.libPackageName + ".generated";
         String generatedClassName = element.getSimpleName() + GENERATED_FILE_SUFFIX;
@@ -72,8 +74,6 @@ public class StateMachineProcessor extends AbstractProcessor {
 
         JavaFileObject source = null;
         try {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
-                    "Generating state machine implementation for " + packageOfStateMachineSource);
             source = processingEnv.getFiler().createSourceFile(generatedClassFullPath);
             try (Writer writer = source.openWriter(); JavaWriter javaWriter = new JavaWriter(writer)) {
 
@@ -82,8 +82,8 @@ public class StateMachineProcessor extends AbstractProcessor {
                 generateMetadata(element, writer, javaWriter);
 
                 javaWriter.emitPackage(generatedPackage);
-                javaWriter.emitImports(packageOfStateMachineSource, SignalPayload.class.getCanonicalName());
-                javaWriter.emitStaticImports(packageOfStateMachineSource + ".*");
+                javaWriter.emitImports(mStateMachineSourceQualifiedName, SignalPayload.class.getCanonicalName());
+                javaWriter.emitStaticImports(mStateMachineSourceQualifiedName + ".*");
                 javaWriter.emitEmptyLine();
                 javaWriter.beginType(generatedClassName, "class", EnumSet.of(Modifier.PUBLIC), element.getSimpleName().toString());
 
@@ -119,8 +119,21 @@ public class StateMachineProcessor extends AbstractProcessor {
 
     private void validateModel() {
         for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mModel.mStateToConnectionsMap.entrySet()) {
-            if (!mModel.mStates.contains(new StateRef(entry.getKey()))) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unknown state " + entry.getKey() + " used in connection. Do you have a typo?");
+            if (entry.getValue() != null) {
+                for (ConnectionRef connectionRef : entry.getValue()) {
+                    if (!mModel.mStates.contains(new StateRef(connectionRef.getFrom()))) {
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown FROM state "
+                                + connectionRef.getFrom() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
+                    }
+                    if (!mModel.mStates.contains(new StateRef(connectionRef.getTo()))) {
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown TO state "
+                                + connectionRef.getTo() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
+                    }
+                    if (!mModel.mSignals.contains(new SignalRef(connectionRef.getSignal()))) {
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown SIGNAL "
+                                + connectionRef.getSignal() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
+                    }
+                }
             }
         }
     }

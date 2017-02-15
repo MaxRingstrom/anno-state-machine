@@ -11,4 +11,24 @@ public class SignalRef {
     public String toString() {
         return mName;
     }
+
+    @Override
+    public int hashCode() {
+        return mName.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof SignalRef)) {
+            return false;
+        }
+        SignalRef castObj = (SignalRef) obj;
+        if (mName != null) {
+            return mName.equals(castObj.mName);
+        } else if (castObj.mName == null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
