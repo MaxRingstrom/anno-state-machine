@@ -9,6 +9,6 @@ public class SignalRef {
 
     @Override
     public String toString() {
-        return mName.toUpperCase();
+        return mName;
     }
 }

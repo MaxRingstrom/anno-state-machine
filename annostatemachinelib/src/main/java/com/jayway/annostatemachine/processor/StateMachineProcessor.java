@@ -89,6 +89,8 @@ public class StateMachineProcessor extends AbstractProcessor {
 
                 mModel.describeContents(javaWriter);
 
+                validateModel();
+
                 generateFields(javaWriter);
 
                 generatePassThroughConstructors(element, generatedClassName, javaWriter);
@@ -115,7 +117,16 @@ public class StateMachineProcessor extends AbstractProcessor {
         }
     }
 
-    private void generatePassThroughConstructors(Element element, final String generatedClassName, final JavaWriter javaWriter) {
+    private void validateModel() {
+        for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mModel.mStateToConnectionsMap.entrySet()) {
+            if (!mModel.mStates.contains(new StateRef(entry.getKey()))) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unknown state " + entry.getKey() + " used in connection. Do you have a typo?");
+            }
+        }
+    }
+
+    private void generatePassThroughConstructors(Element element, final String generatedClassName, final JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
         List<? extends Element> elements = element.getEnclosedElements();
         for (final Element childElement : elements) {
             if (childElement.getKind() == ElementKind.CONSTRUCTOR) {
@@ -167,6 +178,7 @@ public class StateMachineProcessor extends AbstractProcessor {
                             javaWriter.emitStatement("super(%s)", paramListString);
                             javaWriter.endMethod();
                         } catch (IOException e1) {
+                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error when creating pass through constructor");
                             e1.printStackTrace();
                         }
                         return null;
@@ -216,7 +228,7 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void generateSignalHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        ArrayList<ConnectionRef> connectionsForState = mModel.mStateToConnectionsMap.get(stateRef.getName().toLowerCase());
+        ArrayList<ConnectionRef> connectionsForState = mModel.mStateToConnectionsMap.get(stateRef.getName());
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(mModel.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
         if (connectionsForState != null) {
@@ -231,6 +243,7 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void generateFields(JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
         javaWriter.emitField(mModel.getStatesEnumName(), "mCurrentState", EnumSet.of(Modifier.PRIVATE));
     }
 
@@ -360,7 +373,7 @@ public class StateMachineProcessor extends AbstractProcessor {
                 connectionsForFromState = new ArrayList<>();
             }
             connectionsForFromState.add(connection);
-            mStateToConnectionsMap.put(connection.getFrom().toLowerCase(), connectionsForFromState);
+            mStateToConnectionsMap.put(connection.getFrom(), connectionsForFromState);
         }
 
         public void add(StateRef state) {
