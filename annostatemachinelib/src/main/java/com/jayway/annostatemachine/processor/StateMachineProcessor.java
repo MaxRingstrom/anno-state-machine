@@ -3,8 +3,10 @@ package com.jayway.annostatemachine.processor;
 
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.Constants;
+import com.jayway.annostatemachine.NullEventListener;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.SignalRef;
+import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.StateRef;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
@@ -82,7 +84,10 @@ public class StateMachineProcessor extends AbstractProcessor {
                 generateMetadata(element, writer, javaWriter);
 
                 javaWriter.emitPackage(generatedPackage);
-                javaWriter.emitImports(mStateMachineSourceQualifiedName, SignalPayload.class.getCanonicalName());
+                javaWriter.emitImports(mStateMachineSourceQualifiedName,
+                        SignalPayload.class.getCanonicalName(),
+                        NullEventListener.class.getCanonicalName(),
+                        StateMachineEventListener.class.getCanonicalName());
                 javaWriter.emitStaticImports(mStateMachineSourceQualifiedName + ".*");
                 javaWriter.emitEmptyLine();
                 javaWriter.beginType(generatedClassName, "class", EnumSet.of(Modifier.PUBLIC), element.getSimpleName().toString());
@@ -229,7 +234,7 @@ public class StateMachineProcessor extends AbstractProcessor {
     private void generateSwitchStateMethod(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "switchState", EnumSet.of(Modifier.PRIVATE), mModel.getStatesEnumName(), "nextState");
-        javaWriter.emitStatement("System.out.println(\"Going from state \" + mCurrentState + \" to \" + nextState)");
+        javaWriter.emitStatement("mEventListener.onChangingState(mCurrentState, nextState)");
         javaWriter.emitStatement("mCurrentState = nextState");
         javaWriter.endMethod();
     }
@@ -251,6 +256,7 @@ public class StateMachineProcessor extends AbstractProcessor {
                 javaWriter.endControlFlow();
             }
         }
+        javaWriter.emitStatement("mEventListener.onUnhandledSignal(mCurrentState, signal)");
         javaWriter.emitStatement("return null");
         javaWriter.endMethod();
     }
@@ -258,18 +264,22 @@ public class StateMachineProcessor extends AbstractProcessor {
     private void generateFields(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.emitField(mModel.getStatesEnumName(), "mCurrentState", EnumSet.of(Modifier.PRIVATE));
+        javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
     }
 
     private void generateInitMethod(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), mModel.getStatesEnumName(), "startingState");
-        javaWriter.emitStatement("mCurrentState = startingState"); // Force states and signals as enums
+        javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), mModel.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener");
+        javaWriter.emitStatement("mCurrentState = startingState");
+        javaWriter.emitStatement("mEventListener = eventListener != null ? eventListener : new NullEventListener()");
         javaWriter.endMethod();
     }
 
     private void generateSignalDispatcher(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(mModel.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "sig", "SignalPayload", "payload");
+
+        javaWriter.emitStatement("mEventListener.onDispatchingSignal(mCurrentState, sig)");
 
         javaWriter.beginControlFlow("switch (mCurrentState)");
 

@@ -3,6 +3,7 @@ package com.jayway.annostatemachine;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
@@ -18,6 +19,7 @@ import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.KEY_
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String TAG = MainActivity.class.getSimpleName();
     private Handler mHandler;
 
     @Override
@@ -26,9 +28,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final MainViewStateMachineImpl stateMachine = new MainViewStateMachineImpl(this);
-        stateMachine.init(MainViewStateMachine.State.INIT);
-        stateMachine.send(MainViewStateMachine.Signal.START, null);
+        stateMachine.init(MainViewStateMachine.State.INIT, new StateMachineEventListener() {
+            @Override
+            public void onDispatchingSignal(Object o, Object o1) {
+                Log.d(TAG, o1 +  " -> " + o);
+            }
 
+            @Override
+            public void onUnhandledSignal(Object o, Object o1) {
+                Log.d(TAG, "Signal " + o1 + " not handled in state " + o);
+            }
+
+            @Override
+            public void onChangingState(Object o, Object o1) {
+                Log.d(TAG, "State switch from " + o + " to " + o1);
+            }
+        });
+        stateMachine.send(MainViewStateMachine.Signal.START, null);
+        // intentional duplicate in order to see that unhandled signals are reported
+        stateMachine.send(MainViewStateMachine.Signal.START, null);
         mHandler = new Handler(getMainLooper());
         mHandler.postDelayed(new Runnable() {
             @Override
