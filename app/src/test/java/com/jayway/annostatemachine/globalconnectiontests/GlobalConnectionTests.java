@@ -49,6 +49,29 @@ public class GlobalConnectionTests {
         inOrder.verify(mMockEventListener).onChangingState(GlobalMachine.State.INITIAL_STATE, GlobalMachine.State.ERROR);
     }
 
+    @Test
+    public void testGlobalConnectionsNotCalledIfExplicitConnectionHandlesSignal() {
+        GlobalMachineImpl stateMachine = spy(new GlobalMachineImpl());
+        stateMachine.init(GlobalMachineImpl.State.INITIAL_STATE, mMockEventListener);
+
+        // Move to started state
+        stateMachine.send(GlobalMachineImpl.Signal.START);
+        stateMachine.send(GlobalMachineImpl.Signal.ERROR);
+
+        // The explicit error handling connection should get called but not the global ones.
+        InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
+        inOrder.verify(stateMachine).onErrorWhenStarted((SignalPayload) any());
+        inOrder.verify(mMockEventListener).onChangingState(GlobalMachine.State.STARTED, GlobalMachine.State.ERROR_WHEN_STARTED);
+
+        verify(stateMachine, never()).onGlobalErrorWithUnsatisfiedGuard(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).onGlobalErrorWithSatisfiedGuard(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testGlobalConnectionsCalledIfExplicitConnectionGuardIsUnsatisfied() {
+
+    }
+
     @StateMachine
     public static class GlobalMachine {
 
@@ -62,13 +85,21 @@ public class GlobalConnectionTests {
         public enum State {
             INITIAL_STATE,
             STARTED,
-            ERROR
+            ERROR,
+            ERROR_WHEN_STARTED
         }
 
         @Connection(from = "INITIAL_STATE", to="STARTED", signal = "START")
         public boolean onStartSignal(SignalPayload payload) {
             // Non eavesdropping connection that should be called last and should result
             // in a state switch to the STARTED state.
+            return true;
+        }
+
+        @Connection(from = "STARTED", to="ERROR_WHEN_STARTED", signal = "ERROR")
+        public boolean onErrorWhenStarted(SignalPayload payload) {
+            // Explicit handling of ERROR signal when in STARTED state. This overrides the general
+            // error handlers.
             return true;
         }
 
