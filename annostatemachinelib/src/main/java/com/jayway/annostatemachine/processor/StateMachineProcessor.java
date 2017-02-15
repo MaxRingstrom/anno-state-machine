@@ -82,14 +82,8 @@ public class StateMachineProcessor extends AbstractProcessor {
         }
 
         String topElementQualifiedName = ((TypeElement)topElement).getQualifiedName().toString();
-
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Top element qualified name: " + topElementQualifiedName);
-
         String sourceClassPackage = topElementQualifiedName.substring(0, topElementQualifiedName.lastIndexOf("."));
-
         String generatedPackage = sourceClassPackage + ".generated";
-
-        processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "Target generated package: " + generatedPackage);
 
         String generatedClassName = element.getSimpleName() + GENERATED_FILE_SUFFIX;
         String generatedClassFullPath = generatedPackage + "." + generatedClassName;
