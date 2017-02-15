@@ -2,7 +2,6 @@ package com.jayway.annostatemachine.processor;
 
 
 import com.jayway.annostatemachine.ConnectionRef;
-import com.jayway.annostatemachine.Constants;
 import com.jayway.annostatemachine.NullEventListener;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.SignalRef;
@@ -63,7 +62,7 @@ public class StateMachineProcessor extends AbstractProcessor {
             mModel = new Model();
             if (element.getKind().isClass()) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
-                        "Statemachine found: " + ((TypeElement)element).getQualifiedName().toString());
+                        "Statemachine found: " + ((TypeElement) element).getQualifiedName().toString());
                 generateStateMachine(element, roundEnv);
             } else {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
@@ -81,20 +80,17 @@ public class StateMachineProcessor extends AbstractProcessor {
             topElement = element.getEnclosingElement();
         }
 
-        String topElementQualifiedName = ((TypeElement)topElement).getQualifiedName().toString();
+        String topElementQualifiedName = ((TypeElement) topElement).getQualifiedName().toString();
         String sourceClassPackage = topElementQualifiedName.substring(0, topElementQualifiedName.lastIndexOf("."));
         String generatedPackage = sourceClassPackage + ".generated";
 
         String generatedClassName = element.getSimpleName() + GENERATED_FILE_SUFFIX;
         String generatedClassFullPath = generatedPackage + "." + generatedClassName;
 
-        JavaFileObject source = null;
+        JavaFileObject source;
         try {
             source = processingEnv.getFiler().createSourceFile(generatedClassFullPath);
             try (Writer writer = source.openWriter(); JavaWriter javaWriter = new JavaWriter(writer)) {
-
-                StringBuilder sb = new StringBuilder();
-
                 generateMetadata(element, writer, javaWriter);
 
                 javaWriter.emitPackage(generatedPackage);
@@ -384,7 +380,7 @@ public class StateMachineProcessor extends AbstractProcessor {
             return;
         }
 
-        mModel.setStatesEnum((TypeElement)element);
+        mModel.setStatesEnum((TypeElement) element);
         List<? extends Element> values = element.getEnclosedElements();
         for (Element valueElement : values) {
             if (valueElement.getKind().equals(ElementKind.ENUM_CONSTANT)) {
@@ -401,7 +397,7 @@ public class StateMachineProcessor extends AbstractProcessor {
                     "Non enum " + element.getSimpleName() + " of type " + element.getKind() + " using annotation " + Signals.class.getSimpleName());
             return;
         }
-        mModel.setSignalsEnum((TypeElement)element);
+        mModel.setSignalsEnum((TypeElement) element);
         List<? extends Element> values = element.getEnclosedElements();
         for (Element valueElement : values) {
             if (valueElement.getKind() == ElementKind.ENUM_CONSTANT) {
