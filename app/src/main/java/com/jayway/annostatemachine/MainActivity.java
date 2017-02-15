@@ -121,6 +121,12 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
+        @Connection(from = "LOADING_CONTENT", to="*", signal="CONTENT_LOADED")
+        public boolean eavesdropOnContentLoaded(SignalPayload payload) {
+            Log.d(TAG, "Eavesdropped without changing state");
+            return false;
+        }
+
         // Safe check from states
         @Connection(from = "UP_AND_RUNNING", to = "DONE", signal = "CHECKBOX_CHECK_STATE_CHANGED")
         public boolean onUserReadyToContinue(SignalPayload payload) {

@@ -136,7 +136,7 @@ public class StateMachineProcessor extends AbstractProcessor {
                         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown FROM state "
                                 + connectionRef.getFrom() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
-                    if (!mModel.mStates.contains(new StateRef(connectionRef.getTo()))) {
+                    if (!connectionRef.getTo().equals(ConnectionRef.WILDCARD) && !mModel.mStates.contains(new StateRef(connectionRef.getTo()))) {
                         processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown TO state "
                                 + connectionRef.getTo() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
@@ -256,9 +256,23 @@ public class StateMachineProcessor extends AbstractProcessor {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(mModel.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
         if (connectionsForState != null) {
+            ArrayList<ConnectionRef> wildcardToConnections = new ArrayList<>();
+            ArrayList<ConnectionRef> explicitToConnections = new ArrayList<>();
             for (ConnectionRef connection : connectionsForState) {
-                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connection.getSignal() + "))");
-                javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
+                if (connection.getTo().equals(ConnectionRef.WILDCARD)) {
+                    wildcardToConnections.add(connection);
+                } else {
+                    explicitToConnections.add(connection);
+                }
+            }
+            for (ConnectionRef wildCardConnection : wildcardToConnections) {
+                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + wildCardConnection.getSignal() + "))");
+                javaWriter.emitStatement("%s(payload)", wildCardConnection.getName());
+                javaWriter.endControlFlow();
+            }
+            for (ConnectionRef explicitToConnection : explicitToConnections) {
+                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + explicitToConnection.getSignal() + "))");
+                javaWriter.emitStatement("if (%s(payload)) return %s", explicitToConnection.getName(), mModel.getStatesEnumName() + "." + explicitToConnection.getTo());
                 javaWriter.endControlFlow();
             }
         }
@@ -397,7 +411,7 @@ public class StateMachineProcessor extends AbstractProcessor {
         }
 
         public void add(ConnectionRef connection) {
-            ArrayList<ConnectionRef> connectionsForFromState = mStateToConnectionsMap.get(connection.getFrom().toLowerCase());
+            ArrayList<ConnectionRef> connectionsForFromState = mStateToConnectionsMap.get(connection.getFrom());
             if (connectionsForFromState == null) {
                 connectionsForFromState = new ArrayList<>();
             }

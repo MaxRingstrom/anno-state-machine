@@ -2,6 +2,8 @@ package com.jayway.annostatemachine;
 
 public class ConnectionRef {
 
+    public static final String WILDCARD = "*";
+
     public String getName() {
         return mName;
     }
