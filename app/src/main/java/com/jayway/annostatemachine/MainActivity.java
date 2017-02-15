@@ -1,7 +1,10 @@
 package com.jayway.annostatemachine;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.view.View;
+import android.widget.TextView;
 
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
@@ -11,50 +14,66 @@ import com.jayway.annostatemachine.generated.MainViewStateMachineImpl;
 
 public class MainActivity extends AppCompatActivity {
 
+    private Handler mHandler;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        MainViewStateMachineImpl stateMachine = new MainViewStateMachineImpl();
+        final MainViewStateMachineImpl stateMachine = new MainViewStateMachineImpl(this);
         stateMachine.init(MainViewStateMachine.State.INIT);
-        stateMachine.send(MainViewStateMachine.Signal.READY, null);
+        stateMachine.send(MainViewStateMachine.Signal.START, null);
+
+        mHandler = new Handler(getMainLooper());
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                    stateMachine.send(MainViewStateMachine.Signal.CONTENT_LOADED);
+            }
+        }, 5000);
     }
 
     @StateMachine
-    public static class MainViewStateMachine {
+    public abstract static class MainViewStateMachine {
+
+        private final View mLoadingView;
+        private final TextView mText;
+
+        public MainViewStateMachine(MainActivity activity) {
+            mLoadingView = activity.findViewById(R.id.loadingContent);
+            mText = (TextView)activity.findViewById(R.id.text);
+        }
 
         @States
         public enum State {
             INIT,
-            WAITING,
+            LOADING_CONTENT,
+            IDLE,
             ERROR
         }
 
         @Signals
         public enum Signal {
-            READY,
+            START,
+            CONTENT_LOADED,
             ERROR
         }
 
-        @Connection(from="INIT", to="WAITING", signal="READY")
-        public boolean readyConnection(SignalPayload payload) {
+        @Connection(from="INIT", to="LOADING_CONTENT", signal="START")
+        public boolean startLoadingContent(SignalPayload payload) {
+            mLoadingView.setVisibility(View.VISIBLE);
+            // We do not have a guard on this connection so we always return true
             return true;
         }
 
-        @Connection(from="INIT", to="ERROR", signal="ERROR")
-        public boolean errorInInitConnection(SignalPayload payload) {
+        @Connection(from="LOADING_CONTENT", to="IDLE", signal="CONTENT_LOADED")
+        public boolean onContentLoaded(SignalPayload payload) {
+            mLoadingView.setVisibility(View.INVISIBLE);
+            mText.setText("Welcome! - content has been loaded");
+            mText.setVisibility(View.VISIBLE);
             return true;
         }
 
-        @Connection(from="WAITING", to="ERROR", signal="ERROR")
-        public boolean errorInWaitingConnectionGeneric(SignalPayload payload) {
-            return true;
-        }
-
-        @Connection(from="WAITING", to="ERROR", signal="ERROR")
-        public boolean errorInWaitingConnection404(SignalPayload payload) {
-            return false;
-        }
     }
 }

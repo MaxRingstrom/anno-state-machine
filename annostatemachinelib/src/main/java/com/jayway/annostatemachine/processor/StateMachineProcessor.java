@@ -28,8 +28,13 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
+import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.TypeParameterElement;
+import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
@@ -85,13 +90,16 @@ public class StateMachineProcessor extends AbstractProcessor {
                 mModel.describeContents(javaWriter);
 
                 generateFields(javaWriter);
+
+                generatePassThroughConstructors(element, generatedClassName, javaWriter);
+
                 generateInitMethod(javaWriter);
 
                 generateSignalDispatcher(javaWriter);
 
                 generateSignalHandlersForStates(javaWriter);
 
-                generateSendMethod(javaWriter);
+                generateSendMethods(javaWriter);
                 generateSwitchStateMethod(javaWriter);
 
                 // End class
@@ -107,13 +115,89 @@ public class StateMachineProcessor extends AbstractProcessor {
         }
     }
 
-    private void generateSendMethod(JavaWriter javaWriter) throws IOException {
+    private void generatePassThroughConstructors(Element element, final String generatedClassName, final JavaWriter javaWriter) {
+        List<? extends Element> elements = element.getEnclosedElements();
+        for (final Element childElement : elements) {
+            if (childElement.getKind() == ElementKind.CONSTRUCTOR) {
+                childElement.accept(new ElementVisitor<Object, Object>() {
+                    @Override
+                    public Object visit(Element e, Object o) {
+                        return null;
+                    }
+
+                    @Override
+                    public Object visit(Element e) {
+                        return null;
+                    }
+
+                    @Override
+                    public Object visitPackage(PackageElement e, Object o) {
+                        return null;
+                    }
+
+                    @Override
+                    public Object visitType(TypeElement e, Object o) {
+                        return null;
+                    }
+
+                    @Override
+                    public Object visitVariable(VariableElement e, Object o) {
+                        return null;
+                    }
+
+                    @Override
+                    public Object visitExecutable(ExecutableElement e, Object o) {
+                        List<String> params = new ArrayList<String>();
+                        String paramListString = "";
+                        String paramType;
+                        String paramName;
+                        for (VariableElement el : e.getParameters()) {
+                            paramType = el.asType().toString();
+                            paramName = el.getSimpleName().toString();
+                            params.add(paramType);
+                            params.add(paramName);
+                            paramListString += (paramName + ",");
+                        }
+                        if (!paramListString.isEmpty()) {
+                            // Remove trailing ,
+                            paramListString = paramListString.substring(0, paramListString.length() - 1);
+                        }
+                        try {
+                            javaWriter.beginMethod(null, generatedClassName, EnumSet.of(Modifier.PUBLIC), params, null);
+                            javaWriter.emitStatement("super(%s)", paramListString);
+                            javaWriter.endMethod();
+                        } catch (IOException e1) {
+                            e1.printStackTrace();
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public Object visitTypeParameter(TypeParameterElement e, Object o) {
+                        return null;
+                    }
+
+                    @Override
+                    public Object visitUnknown(Element e, Object o) {
+                        return null;
+                    }
+                }, element);
+            }
+        }
+    }
+
+    private void generateSendMethods(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
         javaWriter.emitStatement(mModel.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
         javaWriter.beginControlFlow("if (nextState != null)");
         javaWriter.emitStatement("switchState(nextState)");
         javaWriter.endControlFlow();
+        javaWriter.endMethod();
+
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), mModel.getSignalsEnumName(), "signal");
+        javaWriter.emitStatement("send(signal, null)");
         javaWriter.endMethod();
     }
 
