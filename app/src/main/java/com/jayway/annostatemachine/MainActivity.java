@@ -5,7 +5,6 @@ import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.CheckBox;
-import android.widget.CheckedTextView;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
@@ -14,6 +13,8 @@ import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
 import com.jayway.annostatemachine.generated.MainViewStateMachineImpl;
+
+import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.KEY_CHECKBOX_CHECKED;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                    stateMachine.send(MainViewStateMachine.Signal.CONTENT_LOADED);
+                stateMachine.send(MainViewStateMachine.Signal.CONTENT_LOADED);
             }
         }, 5000);
 
@@ -41,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 SignalPayload payload = new SignalPayload();
-                payload.boolValue = checkbox.isChecked();
+                payload.put(KEY_CHECKBOX_CHECKED, isChecked);
                 stateMachine.send(MainViewStateMachine.Signal.CHECKBOX_CHECK_STATE_CHANGED, payload);
             }
         });
@@ -55,9 +56,11 @@ public class MainActivity extends AppCompatActivity {
         private final View mNextButton;
         private final View mCheckBox;
 
+        public static final String KEY_CHECKBOX_CHECKED = "checkbox_checked";
+
         public MainViewStateMachine(MainActivity activity) {
             mLoadingView = activity.findViewById(R.id.loadingContent);
-            mText = (TextView)activity.findViewById(R.id.text);
+            mText = (TextView) activity.findViewById(R.id.text);
             mNextButton = activity.findViewById(R.id.nextButton);
             mCheckBox = activity.findViewById(R.id.checkbox);
         }
@@ -79,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
             CHECKBOX_CHECK_STATE_CHANGED
         }
 
-        @Connection(from="INIT", to="LOADING_CONTENT", signal="START")
+        @Connection(from = "INIT", to = "LOADING_CONTENT", signal = "START")
         public boolean startLoadingContent(SignalPayload payload) {
             mLoadingView.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.INVISIBLE);
@@ -88,10 +91,21 @@ public class MainActivity extends AppCompatActivity {
             // We do not have a guard on this connection so we always return true
             return true;
         }
-// Safe check from states
-        @Connection(from="UP_AND_RUNNING", to="DONE", signal="CHECKBOX_CHECK_STATE_CHANGED")
+
+        @Connection(from = "LOADING_CONTENT", to = "UP_AND_RUNNING", signal = "CONTENT_LOADED")
+        public boolean onContentLoaded(SignalPayload payload) {
+            mLoadingView.setVisibility(View.INVISIBLE);
+            mNextButton.setVisibility(View.VISIBLE);
+            mCheckBox.setVisibility(View.VISIBLE);
+            mText.setText("Welcome! - content has been loaded");
+            mText.setVisibility(View.VISIBLE);
+            return true;
+        }
+
+        // Safe check from states
+        @Connection(from = "UP_AND_RUNNING", to = "DONE", signal = "CHECKBOX_CHECK_STATE_CHANGED")
         public boolean onUserReadyToContinue(SignalPayload payload) {
-            if (!payload.boolValue) {
+            if (!payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is checked
                 return false;
             }
@@ -99,23 +113,13 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from="DONE", to="UP_AND_RUNNING", signal="CHECKBOX_CHECK_STATE_CHANGED")
+        @Connection(from = "DONE", to = "UP_AND_RUNNING", signal = "CHECKBOX_CHECK_STATE_CHANGED")
         public boolean onUserNoLongerReadyToContinue(SignalPayload payload) {
-            if (payload.boolValue) {
+            if (payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is unchecked
                 return false;
             }
             mNextButton.setEnabled(false);
-            return true;
-        }
-
-        @Connection(from="LOADING_CONTENT", to="UP_AND_RUNNING", signal="CONTENT_LOADED")
-        public boolean onContentLoaded(SignalPayload payload) {
-            mLoadingView.setVisibility(View.INVISIBLE);
-            mNextButton.setVisibility(View.VISIBLE);
-            mCheckBox.setVisibility(View.VISIBLE);
-            mText.setText("Welcome! - content has been loaded");
-            mText.setVisibility(View.VISIBLE);
             return true;
         }
 
