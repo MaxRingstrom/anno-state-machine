@@ -21,7 +21,7 @@ UML diagram for the state machine:
 
 ![An UML diagram for the state machine](https://github.com/jayway/anno-statechart/blob/master/doc/diagrams/SayHelloMachine.png)
 
-The snippet above creates a fully functioning state machine class in the sub package "**generated**". The class is named after the source class but with an "**Impl**" suffix.
+The code above creates a fully functioning state machine class in the sub package "**generated**". The class is named after the source class but with an "**Impl**" suffix.
 
 com.package.**MyStateMachine** is converted to com.package.**generated.MyStateMachineImpl**
 
