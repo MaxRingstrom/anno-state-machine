@@ -6,17 +6,11 @@ This library provides a simple way to create versatile state machines.
 ```java
 @StateMachine
 public class MyStateMachine {
-  @Signals
-  public enum Signal {
-    SAY_HELLO
-  }
+
+  @Signals public enum Signal { SayHello }
+  @States public enum States { Strangers, Introduced }
   
-  @States
-  public enum States {
-    STRANGERS, INTRODUCED
-  }
-  
-  @Connection(from = "STRANGERS", to="INTRODUCED", signal="SAY_HELLO")
+  @Connection(from = "Strangers", to="Introduced", signal="SayHello")
   protected boolean sayHello(SignalPayload payload) {
     System.out.println("Hello");
     return true;
@@ -31,7 +25,7 @@ com.package.**MyStateMachine** is converted to com.package.**generated.MyStateMa
 This is how you use it:
 ```java
 MyStateMachineImpl stateMachine = new MyStateMachineImpl();
-stateMachine.send(MyStateMachine.Signal.SAY_HELLO);
+stateMachine.send(MyStateMachine.Signal.SayHello);
 ```
 The two lines will result in "Hello" being printed.
 
