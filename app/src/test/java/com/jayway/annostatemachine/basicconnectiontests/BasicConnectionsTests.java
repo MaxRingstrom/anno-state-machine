@@ -60,7 +60,6 @@ public class BasicConnectionsTests {
         stateMachine.init(MultiConnectionsWithSameSignalMachineImpl.State.INITIAL_STATE, mMockEventListener);
         stateMachine.send(MultiConnectionsWithSameSignalMachineImpl.Signal.START);
 
-
         // We also verify that the connections are called in the order that they are declared.
         // It is up to the developer normally to make sure that two connections for the same signal
         // do not have a satisfied guard at the same time. If that is the case then the first connection

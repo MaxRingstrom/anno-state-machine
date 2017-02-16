@@ -41,7 +41,6 @@ import javax.tools.JavaFileObject;
 
 // Notes
 // Add general signal handler that can act on multiple from states
-// Add wildcard for signal so that all signals in a state or global context results in a trigger
 // Add a general signal handler that acts on all signals in one, several or all states with or without to state.
 
 @SupportedAnnotationTypes("com.jayway.annostatemachine.annotations.StateMachine")
@@ -115,7 +114,6 @@ public class StateMachineProcessor extends AbstractProcessor {
                 generateSignalDispatcher(javaWriter);
 
                 generateSignalHandlersForStates(javaWriter);
-                generateGlobalSignalHandler(javaWriter);
 
                 generateSendMethods(javaWriter);
                 generateSwitchStateMethod(javaWriter);
@@ -133,38 +131,45 @@ public class StateMachineProcessor extends AbstractProcessor {
         }
     }
 
-    private void generateGlobalSignalHandler(JavaWriter javaWriter) throws IOException {
+    private void emitGlobalAnySignalConnectionHandler(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(mModel.getStatesEnumName(), "handleGlobalSignal", EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
-        ArrayList<ConnectionRef> wildcardToConnections = new ArrayList<>();
-        ArrayList<ConnectionRef> explicitToConnections = new ArrayList<>();
-        for (ConnectionRef connection : mModel.mGlobalConnections) {
-            if (connection.getTo().equals(ConnectionRef.WILDCARD)) {
-                wildcardToConnections.add(connection);
-            } else {
-                explicitToConnections.add(connection);
-            }
+        for (ConnectionRef connection : mModel.mGlobalAnySignalConnections) {
+            javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
         }
-        for (ConnectionRef wildCardConnection : wildcardToConnections) {
-            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + wildCardConnection.getSignal() + "))");
-            javaWriter.emitStatement("%s(payload)", wildCardConnection.getName());
+    }
+
+    private void emitGlobalSpecificSignalConnectionHandler(JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+
+        for (ConnectionRef connection : mModel.mGlobalSpecificSignalConnections) {
+            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connection.getSignal() + "))");
+            javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
             javaWriter.endControlFlow();
         }
-        for (ConnectionRef explicitToConnection : explicitToConnections) {
-            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + explicitToConnection.getSignal() + "))");
-            javaWriter.emitStatement("if (%s(payload)) return %s", explicitToConnection.getName(), mModel.getStatesEnumName() + "." + explicitToConnection.getTo());
-            javaWriter.endControlFlow();
+    }
+
+    private void emitGlobalAnySignalEavesdropperHandler(JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+
+        for (ConnectionRef connection : mModel.mGlobalAnySignalEavesDroppers) {
+            javaWriter.emitStatement("%s(payload)", connection.getName());
         }
+    }
 
-        javaWriter.emitStatement("return null");
+    private void emitGlobalSpecificSignalEavesdropperHandler(JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
 
-        javaWriter.endMethod();
+        for (ConnectionRef connection : mModel.mGlobalSpecificSignalEavesdroppers) {
+            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connection.getSignal() + "))");
+            javaWriter.emitStatement("%s(payload)", connection.getName());
+            javaWriter.endControlFlow();
 
+        }
     }
 
     private void validateModel() {
-        for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mModel.mStateToConnectionsMap.entrySet()) {
+        for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mModel.mLocalSpecificSignalConnections.entrySet()) {
             if (entry.getValue() != null) {
                 for (ConnectionRef connectionRef : entry.getValue()) {
                     if (!mModel.mStates.contains(new StateRef(connectionRef.getFrom()))) {
@@ -292,35 +297,66 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void generateSignalHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        ArrayList<ConnectionRef> connectionsForState = mModel.mStateToConnectionsMap.get(stateRef.getName());
+        ArrayList<ConnectionRef> specificSignalConnectionsForState = mModel.mLocalSpecificSignalConnections.get(stateRef.getName());
+        ArrayList<ConnectionRef> anySignalConnectionsForState = mModel.mLocalAnySignalConnections.get(stateRef.getName());
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(mModel.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
-        if (connectionsForState != null) {
-            ArrayList<ConnectionRef> wildcardToConnections = new ArrayList<>();
-            ArrayList<ConnectionRef> explicitToConnections = new ArrayList<>();
-            for (ConnectionRef connection : connectionsForState) {
-                if (connection.getTo().equals(ConnectionRef.WILDCARD)) {
-                    wildcardToConnections.add(connection);
-                } else {
-                    explicitToConnections.add(connection);
+
+        emitLocalSpecificSignalEavesdropperHandler(stateRef, javaWriter);
+        emitLocalAnySignalEavesdropperHandler(stateRef, javaWriter);
+
+        javaWriter.emitEmptyLine();
+        if (specificSignalConnectionsForState != null) {
+            // Sort connections per signal - can be done in model later on
+            HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = new HashMap<>();
+            for (ConnectionRef connection : specificSignalConnectionsForState) {
+                ArrayList<ConnectionRef> connections = connectionsPerSignal.get(connection.getSignal());
+                if (connections == null) {
+                    connections = new ArrayList<>();
                 }
+                connections.add(connection);
+                connectionsPerSignal.put(connection.getSignal(), connections);
             }
-            for (ConnectionRef wildCardConnection : wildcardToConnections) {
-                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + wildCardConnection.getSignal() + "))");
-                javaWriter.emitStatement("%s(payload)", wildCardConnection.getName());
-                javaWriter.endControlFlow();
-            }
-            for (ConnectionRef explicitToConnection : explicitToConnections) {
-                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + explicitToConnection.getSignal() + "))");
-                javaWriter.emitStatement("if (%s(payload)) return %s", explicitToConnection.getName(), mModel.getStatesEnumName() + "." + explicitToConnection.getTo());
+            for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
+                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connectionsForSignalEntry.getKey() + "))");
+                for (ConnectionRef connectionForSignal : connectionsForSignalEntry.getValue()) {
+                    javaWriter.emitStatement("if (%s(payload)) return %s", connectionForSignal.getName(), mModel.getStatesEnumName() + "." + connectionForSignal.getTo());
+                }
                 javaWriter.endControlFlow();
             }
         }
 
-        javaWriter.emitStatement(mModel.getStatesEnumName() + " nextState = handleGlobalSignal(signal, payload)");
+        javaWriter.emitEmptyLine();
+        if (anySignalConnectionsForState != null) {
+            for (ConnectionRef connection : anySignalConnectionsForState) {
+                javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
+            }
+        }
 
-        javaWriter.emitStatement("return nextState");
+        javaWriter.emitStatement("return null");
         javaWriter.endMethod();
+    }
+
+    private void emitLocalAnySignalEavesdropperHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        ArrayList<ConnectionRef> localAnySignalEavesdroppers = mModel.mLocalAnySignalEavesdroppers.get(stateRef.getName());
+        if (localAnySignalEavesdroppers != null) {
+            for (ConnectionRef connection : localAnySignalEavesdroppers) {
+                javaWriter.emitStatement("%s(payload)", connection.getName());
+            }
+        }
+    }
+
+    private void emitLocalSpecificSignalEavesdropperHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        ArrayList<ConnectionRef> localSpecificSignalEavesdroppers = mModel.mLocalSpecificSignalEavesdroppers.get(stateRef.getName());
+        if (localSpecificSignalEavesdroppers != null) {
+            for (ConnectionRef connection : localSpecificSignalEavesdroppers) {
+                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connection.getSignal() + "))");
+                javaWriter.emitStatement("%s(payload)", connection.getName());
+                javaWriter.endControlFlow();
+            }
+        }
     }
 
     private void generateFields(JavaWriter javaWriter) throws IOException {
@@ -341,18 +377,25 @@ public class StateMachineProcessor extends AbstractProcessor {
 
     private void generateSignalDispatcher(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(mModel.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "sig", "SignalPayload", "payload");
+        javaWriter.beginMethod(mModel.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
-        javaWriter.emitStatement("mEventListener.onDispatchingSignal(mCurrentState, sig)");
+        javaWriter.emitStatement("mEventListener.onDispatchingSignal(mCurrentState, signal)");
 
+        emitGlobalSpecificSignalEavesdropperHandler(javaWriter);
+        emitGlobalAnySignalEavesdropperHandler(javaWriter);
+
+        javaWriter.emitEmptyLine();
         javaWriter.beginControlFlow("switch (mCurrentState)");
 
         for (StateRef state : mModel.mStates) {
-            javaWriter.emitStatement("case %s: return handleSignalIn%s(sig, payload)",
+            javaWriter.emitStatement("case %s: return handleSignalIn%s(signal, payload)",
                     state.getName(), camelCase(state.getName()));
         }
 
         javaWriter.endControlFlow();
+
+        emitGlobalSpecificSignalConnectionHandler(javaWriter);
+        emitGlobalAnySignalConnectionHandler(javaWriter);
 
         javaWriter.emitStatement("return null");
 
@@ -425,8 +468,14 @@ public class StateMachineProcessor extends AbstractProcessor {
     private static class Model {
 
         private ArrayList<SignalRef> mSignals = new ArrayList<>();
-        private HashMap<String, ArrayList<ConnectionRef>> mStateToConnectionsMap = new HashMap<>();
-        private ArrayList<ConnectionRef> mGlobalConnections = new ArrayList<>();
+        private HashMap<String, ArrayList<ConnectionRef>> mLocalSpecificSignalConnections = new HashMap<>();
+        private HashMap<String, ArrayList<ConnectionRef>> mLocalAnySignalEavesdroppers = new HashMap<>();
+        private HashMap<String, ArrayList<ConnectionRef>> mLocalSpecificSignalEavesdroppers = new HashMap<>();
+        private HashMap<String, ArrayList<ConnectionRef>> mLocalAnySignalConnections = new HashMap<>();
+        private ArrayList<ConnectionRef> mGlobalSpecificSignalEavesdroppers = new ArrayList<>();
+        private ArrayList<ConnectionRef> mGlobalAnySignalEavesDroppers = new ArrayList<>();
+        private ArrayList<ConnectionRef> mGlobalSpecificSignalConnections = new ArrayList<>();
+        private ArrayList<ConnectionRef> mGlobalAnySignalConnections = new ArrayList<>();
         private ArrayList<StateRef> mStates = new ArrayList<>();
 
         private String mSignalsEnumClassQualifiedName;
@@ -456,16 +505,105 @@ public class StateMachineProcessor extends AbstractProcessor {
         }
 
         public void add(ConnectionRef connection) {
-            if (ConnectionRef.WILDCARD.equals(connection.getFrom())) {
-                mGlobalConnections.add(connection);
-            } else {
-                ArrayList<ConnectionRef> connectionsForFromState = mStateToConnectionsMap.get(connection.getFrom());
-                if (connectionsForFromState == null) {
-                    connectionsForFromState = new ArrayList<>();
+            boolean hasWildcardFrom = ConnectionRef.WILDCARD.equals(connection.getFrom());
+            boolean hasWildcardTo = ConnectionRef.WILDCARD.equals(connection.getTo());
+            boolean hasWildcardSignal = ConnectionRef.WILDCARD.equals(connection.getSignal());
+
+            if (hasWildcardFrom) {
+                // Global
+                if (hasWildcardTo) {
+                    // Eavesdrop
+                    if (hasWildcardSignal) {
+                        // Any signal
+                        addGlobalAnySignalEavesDropper(connection);
+                    } else {
+                        // Specific signal
+                        addGlobalSpecificSignalEavesDropper(connection);
+                    }
+                } else {
+                    // Normal
+                    if (hasWildcardSignal) {
+                        // Any signal
+                        addGlobalAnySignalConnection(connection);
+                    } else {
+                        // Specific signal
+                        addGlobalSpecificSignalConnection(connection);
+                    }
                 }
-                connectionsForFromState.add(connection);
-                mStateToConnectionsMap.put(connection.getFrom(), connectionsForFromState);
+            } else {
+                // Local
+                if (hasWildcardTo) {
+                    // Eavesdrop
+                    if (hasWildcardSignal) {
+                        // Any signal
+                        addLocalAnySignalEavesdropper(connection);
+                    } else {
+                        // Specific signal
+                        addLocalSpecificSignalEavesdropper(connection);
+                    }
+                } else {
+                    // Normal
+                    if (hasWildcardSignal) {
+                        // Any signal
+                        addLocalAnySignalConnection(connection);
+                    } else {
+                        // Specific signal
+                        addLocalSpecificSignalConnection(connection);
+                    }
+                }
             }
+        }
+
+        private void addLocalAnySignalConnection(ConnectionRef connection) {
+            ArrayList<ConnectionRef> connections = mLocalAnySignalConnections.get(connection.getFrom());
+            if (connections == null) {
+                connections = new ArrayList<>();
+            }
+            connections.add(connection);
+            mLocalAnySignalConnections.put(connection.getFrom(), connections);
+        }
+
+        private void addLocalSpecificSignalEavesdropper(ConnectionRef connection) {
+            ArrayList<ConnectionRef> connections = mLocalSpecificSignalEavesdroppers.get(connection.getFrom());
+            if (connections == null) {
+                connections = new ArrayList<>();
+            }
+            connections.add(connection);
+            mLocalSpecificSignalEavesdroppers.put(connection.getFrom(), connections);
+        }
+
+        private void addLocalAnySignalEavesdropper(ConnectionRef connection) {
+            ArrayList<ConnectionRef> connections = mLocalAnySignalEavesdroppers.get(connection.getFrom());
+            if (connections == null) {
+                connections = new ArrayList<>();
+            }
+            connections.add(connection);
+            mLocalAnySignalEavesdroppers.put(connection.getFrom(), connections);
+        }
+
+        private void addGlobalSpecificSignalConnection(ConnectionRef connection) {
+            mGlobalSpecificSignalConnections.add(connection);
+        }
+
+        private void addGlobalAnySignalConnection(ConnectionRef connection) {
+            mGlobalAnySignalConnections.add(connection);
+        }
+
+        private void addGlobalAnySignalEavesDropper(ConnectionRef connection) {
+            mGlobalAnySignalEavesDroppers.add(connection);
+        }
+
+        private void addGlobalSpecificSignalEavesDropper(ConnectionRef connection) {
+            mGlobalSpecificSignalEavesdroppers.add(connection);
+        }
+
+        private void addLocalSpecificSignalConnection(ConnectionRef connection) {
+            ArrayList<ConnectionRef> connectionsForFromState = mLocalSpecificSignalConnections.get(connection.getFrom());
+            if (connectionsForFromState == null) {
+                connectionsForFromState = new ArrayList<>();
+            }
+            connectionsForFromState.add(connection);
+            mLocalSpecificSignalConnections.put(connection.getFrom(), connectionsForFromState);
         }
 
         public void add(StateRef state) {
@@ -486,7 +624,7 @@ public class StateMachineProcessor extends AbstractProcessor {
 
             javaWriter.emitEmptyLine();
             javaWriter.emitSingleLineComment("--- Connections ---");
-            for (Map.Entry<String, ArrayList<ConnectionRef>> connectionEntry : mStateToConnectionsMap.entrySet()) {
+            for (Map.Entry<String, ArrayList<ConnectionRef>> connectionEntry : mLocalSpecificSignalConnections.entrySet()) {
                 javaWriter.emitSingleLineComment("");
                 javaWriter.emitSingleLineComment(" State: " + connectionEntry.getKey());
                 for (ConnectionRef connection : connectionEntry.getValue()) {
