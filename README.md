@@ -25,9 +25,10 @@ com.package.**MyStateMachine** is converted to com.package.**generated.MyStateMa
 This is how you use it:
 ```java
 MyStateMachineImpl stateMachine = new MyStateMachineImpl();
+stateMachine.init(MyStateMachine.State.Strangers, null);
 stateMachine.send(MyStateMachine.Signal.SayHello);
 ```
-The two lines will result in "Hello" being printed.
+The three lines will result in "Hello" being printed.
 
 ## What if I make a typo in the @Connection annotation?
 The validity of the state machine declaration is checked at compile time. You will get a build error if you mistype a state or signal name.
