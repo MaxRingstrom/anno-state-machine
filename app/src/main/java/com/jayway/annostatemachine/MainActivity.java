@@ -16,6 +16,7 @@ import com.jayway.annostatemachine.annotations.States;
 import com.jayway.annostatemachine.generated.MainViewStateMachineImpl;
 
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.KEY_CHECKBOX_CHECKED;
+import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.*;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         final MainViewStateMachineImpl stateMachine = new MainViewStateMachineImpl(this);
-        stateMachine.init(MainViewStateMachine.State.INIT, new StateMachineEventListener() {
+        stateMachine.init(MainViewStateMachine.State.Init, new StateMachineEventListener() {
             @Override
             public void onDispatchingSignal(Object o, Object o1) {
                 Log.d(TAG, o1 +  " -> " + o);
@@ -39,25 +40,22 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "State switch from " + o + " to " + o1);
             }
         });
-        stateMachine.send(MainViewStateMachine.Signal.START, null);
-        // intentional duplicate in order to see that unhandled signals are reported
-        stateMachine.send(MainViewStateMachine.Signal.START, null);
 
-        mHandler = new Handler(getMainLooper());
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                stateMachine.send(MainViewStateMachine.Signal.CONTENT_LOADED);
-            }
-        }, 5000);
+        connectCheckBox(stateMachine);
 
+        stateMachine.send(Start, null);
+
+        loadContentAsync(stateMachine);
+    }
+
+    private void connectCheckBox(final MainViewStateMachineImpl stateMachine) {
         final CheckBox checkbox = (CheckBox) findViewById(R.id.checkbox);
         checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 SignalPayload payload = new SignalPayload();
                 payload.put(KEY_CHECKBOX_CHECKED, isChecked);
-                stateMachine.send(MainViewStateMachine.Signal.CHECKBOX_CHECK_STATE_CHANGED, payload);
+                stateMachine.send(CheckBoxCheckStateChanged, payload);
             }
         });
     }
@@ -80,23 +78,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @States
-        public enum State {
-            INIT,
-            LOADING_CONTENT,
-            UP_AND_RUNNING,
-            DONE,
-            ERROR
-        }
+        public enum State { Init, LoadingContent, UpAndRunning, Done, Error }
 
         @Signals
-        public enum Signal {
-            START,
-            CONTENT_LOADED,
-            ERROR,
-            CHECKBOX_CHECK_STATE_CHANGED
-        }
+        public enum Signal { Start, ContentLoaded, CheckBoxCheckStateChanged }
 
-        @Connection(from = "INIT", to = "LOADING_CONTENT", signal = "START")
+        @Connection(from = "Init", to = "LoadingContent", signal = "Start")
         public boolean startLoadingContent(SignalPayload payload) {
             mLoadingView.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.INVISIBLE);
@@ -106,19 +93,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "*", to ="ERROR", signal = "START")
-        public boolean onUnhandledStartSignal(SignalPayload payload) {
-            Log.d(TAG, "Global handler with to state that is not overridden for the current state");
-            return true;
-        }
-
-        @Connection(from = "*", to ="*", signal = "START")
-        public boolean onStartEavesdropSignal(SignalPayload payload) {
-            Log.d(TAG, "Eavesdrop handler without to state should run before normal handling and global handling");
-            return true;
-        }
-
-        @Connection(from = "LOADING_CONTENT", to = "UP_AND_RUNNING", signal = "CONTENT_LOADED")
+        @Connection(from = "LoadingContent", to = "UpAndRunning", signal = "ContentLoaded")
         public boolean onContentLoaded(SignalPayload payload) {
             mLoadingView.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.VISIBLE);
@@ -128,14 +103,14 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "LOADING_CONTENT", to="*", signal="CONTENT_LOADED")
+        @Connection(from = "LoadingContent", to="*", signal="ContentLoaded")
         public boolean eavesdropOnContentLoaded(SignalPayload payload) {
-            Log.d(TAG, "Eavesdropped without changing state");
+            Log.d(TAG, "Eavesdropped that content has loaded");
             return false;
         }
 
         // Safe check from states
-        @Connection(from = "UP_AND_RUNNING", to = "DONE", signal = "CHECKBOX_CHECK_STATE_CHANGED")
+        @Connection(from = "UpAndRunning", to = "Done", signal = "CheckBoxCheckStateChanged")
         public boolean onUserReadyToContinue(SignalPayload payload) {
             if (!payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is checked
@@ -145,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "DONE", to = "UP_AND_RUNNING", signal = "CHECKBOX_CHECK_STATE_CHANGED")
+        @Connection(from = "Done", to = "UpAndRunning", signal = "CheckBoxCheckStateChanged")
         public boolean onUserNoLongerReadyToContinue(SignalPayload payload) {
             if (payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is unchecked
@@ -156,4 +131,15 @@ public class MainActivity extends AppCompatActivity {
         }
 
     }
+
+    private void loadContentAsync(final MainViewStateMachineImpl stateMachine) {
+        mHandler = new Handler(getMainLooper());
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                stateMachine.send(ContentLoaded);
+            }
+        }, 5000);
+    }
+
 }
