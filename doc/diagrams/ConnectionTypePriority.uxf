@@ -205,12 +205,12 @@ layer=0</panel_attributes>
   <element>
     <id>UMLState</id>
     <coordinates>
-      <x>210</x>
+      <x>200</x>
       <y>300</y>
-      <w>240</w>
+      <w>260</w>
       <h>40</h>
     </coordinates>
-    <panel_attributes>Eavesdropping connection 1
+    <panel_attributes>Eavesdropping global connection 1
 bg=white
 layer=1</panel_attributes>
     <additional_attributes/>
@@ -218,12 +218,12 @@ layer=1</panel_attributes>
   <element>
     <id>UMLState</id>
     <coordinates>
-      <x>210</x>
+      <x>200</x>
       <y>370</y>
-      <w>240</w>
+      <w>260</w>
       <h>40</h>
     </coordinates>
-    <panel_attributes>Eavesdropping connection 2
+    <panel_attributes>Eavesdropping global connection 2
 bg=white</panel_attributes>
     <additional_attributes/>
   </element>
