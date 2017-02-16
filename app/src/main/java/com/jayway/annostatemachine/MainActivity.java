@@ -32,12 +32,12 @@ public class MainActivity extends AppCompatActivity {
         stateMachine.init(MainViewStateMachine.State.Init, new StateMachineEventListener() {
             @Override
             public void onDispatchingSignal(Object o, Object o1) {
-                Log.d(TAG, o1 +  " -> " + o);
+                Log.d(TAG, o1 +  "->[" + o + "]");
             }
 
             @Override
             public void onChangingState(Object o, Object o1) {
-                Log.d(TAG, "State switch from " + o + " to " + o1);
+                Log.d(TAG, "State switch from [" + o + "] to [" + o1 + "]");
             }
         });
 
