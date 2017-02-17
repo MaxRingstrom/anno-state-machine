@@ -1,4 +1,4 @@
-package com.jayway.annostatemachine.globaleavesdroppertests;
+package com.jayway.annostatemachine.globalspytests;
 
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
@@ -6,7 +6,7 @@ import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
-import com.jayway.annostatemachine.globaleavesdroppertests.generated.GlobalEavesdroppingMachineImpl;
+import com.jayway.annostatemachine.globalspytests.generated.GlobalEavesdroppingMachineImpl;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -16,8 +16,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.jayway.annostatemachine.globaleavesdroppertests.GlobalEavesdropperTests.GlobalEavesdroppingMachine.Signal;
-import static com.jayway.annostatemachine.globaleavesdroppertests.GlobalEavesdropperTests.GlobalEavesdroppingMachine.State;
+import static com.jayway.annostatemachine.globalspytests.GlobalEavesdropperTests.GlobalEavesdroppingMachine.Signal;
+import static com.jayway.annostatemachine.globalspytests.GlobalEavesdropperTests.GlobalEavesdroppingMachine.State;
 import static org.mockito.Mockito.spy;
 
 @RunWith(MockitoJUnitRunner.class)

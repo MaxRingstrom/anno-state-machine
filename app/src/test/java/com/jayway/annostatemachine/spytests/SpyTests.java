@@ -1,4 +1,4 @@
-package com.jayway.annostatemachine.eavesdroppertests;
+package com.jayway.annostatemachine.spytests;
 
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
@@ -6,8 +6,8 @@ import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
-import com.jayway.annostatemachine.eavesdroppertests.generated.MixedEavesDropAndNormalConnectionsMachineImpl;
-import com.jayway.annostatemachine.eavesdroppertests.generated.SimpleEavesDroppingMachineImpl;
+import com.jayway.annostatemachine.spytests.generated.MixedEavesDropAndNormalConnectionsMachineImpl;
+import com.jayway.annostatemachine.spytests.generated.SimpleEavesDroppingMachineImpl;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,7 +22,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
-public class EavesdropperTests {
+public class SpyTests {
 
     @Mock
     StateMachineEventListener mMockEventListener;

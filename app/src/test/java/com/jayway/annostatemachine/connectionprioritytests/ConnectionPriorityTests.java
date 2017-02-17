@@ -16,19 +16,21 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_1;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_2;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_EAVESDROPPER_1;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_EAVESDROPPER_2;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_EXPLICIT_CONNECTION_1;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_EXPLICIT_CONNECTION_2;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_1;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_2;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_CONNECTION_1;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_CONNECTION_2;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_EAVESDROPPER_1;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_EAVESDROPPER_2;
-import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.State;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -43,58 +45,62 @@ public class ConnectionPriorityTests {
         stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
 
         stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
-                .put(KEY_SATISFY_EXPLICIT_CONNECTION_1, false)
-                .put(KEY_SATISFY_EXPLICIT_CONNECTION_2, false)
-                .put(KEY_SATISFY_EAVESDROPPER_1, false)
-                .put(KEY_SATISFY_EAVESDROPPER_2, false)
-                .put(KEY_SATISFY_GLOBAL_CONNECTION_1, false)
-                .put(KEY_SATISFY_GLOBAL_CONNECTION_2, false)
-                .put(KEY_SATISFY_GLOBAL_EAVESDROPPER_1, false)
-                .put(KEY_SATISFY_GLOBAL_EAVESDROPPER_2, false)
-                .put(KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_1, false)
-                .put(KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_2, false)
-                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_1, false)
-                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
         );
 
         InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
 
-        inOrder.verify(stateMachine).eavesDropper1(Matchers.<SignalPayload>any());
-        inOrder.verify(stateMachine).eavesDropper2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalSpy2(Matchers.<SignalPayload>any());
 
-        inOrder.verify(stateMachine).globalEavesDropper1(Matchers.<SignalPayload>any());
-        inOrder.verify(stateMachine).globalEavesDropper2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy2(Matchers.<SignalPayload>any());
 
-        inOrder.verify(stateMachine).anySignalEavesdropper1(Matchers.<SignalPayload>any());
-        inOrder.verify(stateMachine).anySignalEavesdropper2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalTransition2(Matchers.<SignalPayload>any());
 
-        inOrder.verify(stateMachine).globalAnySignalEavesdropper1(Matchers.<SignalPayload>any());
-        inOrder.verify(stateMachine).globalAnySignalEavesdropper2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy2(Matchers.<SignalPayload>any());
 
-        inOrder.verify(stateMachine).explicitConnection1(Matchers.<SignalPayload>any());
-        inOrder.verify(stateMachine).explicitConnection2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
 
-        inOrder.verify(stateMachine).globalConnection1(Matchers.<SignalPayload>any());
-        inOrder.verify(stateMachine).globalConnection2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalTransition(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalTransition2(Matchers.<SignalPayload>any());
 
-        inOrder.verify(mMockEventListener).onChangingState(State.INITIAL_STATE, State.STARTED);
+        inOrder.verify(mMockEventListener, never()).onChangingState(Matchers.any(), Matchers.any());
     }
 
     @StateMachine
     public static class MultiMachine {
 
-        public static final String KEY_SATISFY_EXPLICIT_CONNECTION_1 = "satisfyExplicitConnection1";
-        public static final String KEY_SATISFY_EXPLICIT_CONNECTION_2 = "satisfyExplicitConnection2";
-        public static final String KEY_SATISFY_EAVESDROPPER_1 = "satisfyEavesdropper1";
-        public static final String KEY_SATISFY_EAVESDROPPER_2 = "satisfyEavesdropper2";
-        public static final String KEY_SATISFY_GLOBAL_CONNECTION_1 = "satisfyGlobalConnection1";
-        public static final String KEY_SATISFY_GLOBAL_CONNECTION_2 = "satisfyGlobalConnection2";
-        public static final String KEY_SATISFY_GLOBAL_EAVESDROPPER_1 = "satisfyGlobalEavesdropper1";
-        public static final String KEY_SATISFY_GLOBAL_EAVESDROPPER_2 = "satisfyGlobalEavesdropper2";
-        public static final String KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_1 = "satisfyAnySignalEavesdropper1";
-        public static final String KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_2 = "satisfyAnySignalEavesdropper2";
-        public static final String KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_1 = "satisfyAnySignalEavesdropper1";
-        public static final String KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_2 = "satisfyAnySignalEavesdropper2";
+        public static final String KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1 = "satisfyLocalSpecificSignalTransition1";
+        public static final String KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2 = "satisfyLocalSpecificSignalTransition2";
+        public static final String KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1 = "satisfyLocalSpecificSignalSpy1";
+        public static final String KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2 = "satisfyLocalSpecificSignalSpy2";
+        public static final String KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1 = "satisfyGlobalSpecificSignalTransition1";
+        public static final String KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2 = "satisfyGlobalSpecificSignalTransition2";
+        public static final String KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1 = "satisfyGlobalSpecificSignalSpy1";
+        public static final String KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2 = "satisfyGlobalSpecificSignalSpy2";
+        public static final String KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1 = "satisfyLocalAnySignalSpy1";
+        public static final String KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2 = "satisfyLocalAnySignalSpy2";
+        public static final String KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1 = "satisfyGlobalAnySignalSpy1";
+        public static final String KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2 = "satisfyGlobalAnySignalSpy2";
+        public static final String KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1 = "satisfyLocalAnySignalTransition1";
+        public static final String KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2 = "satisfyLocalAnySignalTransition2";
 
         @Signals
         public enum Signal {
@@ -109,63 +115,73 @@ public class ConnectionPriorityTests {
         }
 
         @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
-        public boolean explicitConnection1(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_EXPLICIT_CONNECTION_1, false);
+        public boolean localSpecificSignalTransition1(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false);
         }
 
         @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
-        public boolean explicitConnection2(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_EXPLICIT_CONNECTION_2, false);
+        public boolean localSpecificSignalTransition2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false);
+        }
+
+        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "*")
+        public boolean localAnySignalTransition1(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false);
+        }
+
+        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "*")
+        public boolean localAnySignalTransition2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false);
         }
 
         @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
-        public boolean eavesDropper1(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_EAVESDROPPER_1, false);
+        public boolean localSpecificSignalSpy1(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false);
         }
 
         @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
-        public boolean eavesDropper2(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_EAVESDROPPER_2, false);
+        public boolean localSpecificSignalSpy2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false);
         }
 
         @Connection(from = "*", to = "ERROR", signal = "START")
-        public boolean globalConnection1(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_GLOBAL_CONNECTION_1, false);
+        public boolean globalSpecificSignalTransition(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false);
         }
 
         @Connection(from = "*", to = "ERROR", signal = "START")
-        public boolean globalConnection2(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_GLOBAL_CONNECTION_2, false);
+        public boolean globalSpecificSignalTransition2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false);
         }
 
         @Connection(from = "*", to = "*", signal = "START")
-        public boolean globalEavesDropper1(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_GLOBAL_EAVESDROPPER_1, false);
+        public boolean globalSpecificSignalSpy1(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false);
         }
 
         @Connection(from = "*", to = "*", signal = "START")
-        public boolean globalEavesDropper2(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_GLOBAL_EAVESDROPPER_2, false);
+        public boolean globalSpecificSignalSpy2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false);
         }
 
         @Connection(from = "INITIAL_STATE", to = "*", signal = "*")
-        public boolean anySignalEavesdropper1(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_1, false);
+        public boolean localAnySignalSpy1(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false);
         }
 
         @Connection(from = "INITIAL_STATE", to = "*", signal = "*")
-        public boolean anySignalEavesdropper2(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_ANY_SIGNAL_EAVESDROPPER_2, false);
+        public boolean localAnySignalSpy2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false);
         }
 
         @Connection(from = "*", to = "*", signal = "*")
-        public boolean globalAnySignalEavesdropper1(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_1, false);
+        public boolean globalAnySignalSpy1(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false);
         }
 
         @Connection(from = "*", to = "*", signal = "*")
-        public boolean globalAnySignalEavesdropper2(SignalPayload payload) {
-            return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_EAVESDROPPER_2, false);
+        public boolean globalAnySignalSpy2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false);
         }
     }
 }
