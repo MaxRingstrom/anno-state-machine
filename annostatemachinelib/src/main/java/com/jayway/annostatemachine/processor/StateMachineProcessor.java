@@ -103,7 +103,7 @@ public class StateMachineProcessor extends AbstractProcessor {
 
                 mModel.describeContents(javaWriter);
 
-                validateModel();
+                mModel.validateModel(mStateMachineSourceQualifiedName, processingEnv.getMessager());
 
                 generateFields(javaWriter);
 
@@ -132,22 +132,26 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void emitGlobalAnySignalConnectionHandler(JavaWriter javaWriter) throws IOException {
-        if (mModel.mGlobalAnySignalConnections.size() == 0) {
+        List<ConnectionRef> globalAnySignalTransitions = mModel.getGlobalAnySignalTransitions();
+        if (globalAnySignalTransitions.size() == 0) {
             return;
         }
         javaWriter.emitEmptyLine();
 
-        for (ConnectionRef connection : mModel.mGlobalAnySignalConnections) {
-            javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
+        for (ConnectionRef connection : globalAnySignalTransitions) {
+            javaWriter.emitStatement("if (%s(payload)) return %s",
+                    connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
         }
     }
 
     private void emitGlobalSpecificSignalConnectionHandler(JavaWriter javaWriter) throws IOException {
-        if (mModel.mGlobalSpecificSignalConnectionsPerSignal.size() == 0) {
+        HashMap<String, ArrayList<ConnectionRef>>
+                globalSpecificSignalTransitionsPerSignal = mModel.getGlobalSignalTransitionsPerSignal();
+        if (globalSpecificSignalTransitionsPerSignal.size() == 0) {
             return;
         }
 
-        for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : mModel.mGlobalSpecificSignalConnectionsPerSignal.entrySet()) {
+        for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : globalSpecificSignalTransitionsPerSignal.entrySet()) {
             javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connectionsForSignal.getKey() + "))");
             for (ConnectionRef connection : connectionsForSignal.getValue()) {
                 javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
@@ -157,49 +161,30 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void emitGlobalAnySignalSpyHandler(JavaWriter javaWriter) throws IOException {
-        if (mModel.mGlobalAnySignalSpies.size() == 0) {
+        ArrayList<ConnectionRef> globalAnySignalSpies = mModel.getGlobalAnySignalSpies();
+        if (globalAnySignalSpies.size() == 0) {
             return;
         }
         javaWriter.emitEmptyLine();
 
-        for (ConnectionRef connection : mModel.mGlobalAnySignalSpies) {
+        for (ConnectionRef connection : globalAnySignalSpies) {
             javaWriter.emitStatement("%s(payload)", connection.getName());
         }
     }
 
     private void emitGlobalSpecificSignalSpyHandler(JavaWriter javaWriter) throws IOException {
-        if (mModel.mGlobalSpecificSignalSpiesPerSignal.size() == 0) {
+        HashMap<String, ArrayList<ConnectionRef>> globalSignalSpiesPerSignal = mModel.getGlobalSignalSpiesPerSignal();
+        if (globalSignalSpiesPerSignal.size() == 0) {
             return;
         }
         javaWriter.emitEmptyLine();
 
-        for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : mModel.mGlobalSpecificSignalSpiesPerSignal.entrySet()) {
+        for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : globalSignalSpiesPerSignal.entrySet()) {
             javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connectionsForSignal.getKey() + "))");
             for (ConnectionRef connection : connectionsForSignal.getValue()) {
                 javaWriter.emitStatement("%s(payload)", connection.getName());
             }
             javaWriter.endControlFlow();
-        }
-    }
-
-    private void validateModel() {
-        for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mModel.mLocalSpecificSignalConnections.entrySet()) {
-            if (entry.getValue() != null) {
-                for (ConnectionRef connectionRef : entry.getValue()) {
-                    if (!mModel.mStates.contains(new StateRef(connectionRef.getFrom()))) {
-                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown FROM state "
-                                + connectionRef.getFrom() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
-                    }
-                    if (!connectionRef.getTo().equals(ConnectionRef.WILDCARD) && !mModel.mStates.contains(new StateRef(connectionRef.getTo()))) {
-                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown TO state "
-                                + connectionRef.getTo() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
-                    }
-                    if (!mModel.mSignals.contains(new SignalRef(connectionRef.getSignal()))) {
-                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mStateMachineSourceQualifiedName + " - Unknown SIGNAL "
-                                + connectionRef.getSignal() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
-                    }
-                }
-            }
         }
     }
 
@@ -305,20 +290,20 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void generateSignalHandlersForStates(JavaWriter javaWriter) throws IOException {
-        for (StateRef stateRef : mModel.mStates) {
+        for (StateRef stateRef : mModel.getStates()) {
             generateSignalHandler(stateRef, javaWriter);
         }
     }
 
     private void generateSignalHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        ArrayList<ConnectionRef> anySignalConnectionsForState = mModel.mLocalAnySignalConnections.get(stateRef.getName());
+        ArrayList<ConnectionRef> anySignalConnectionsForState = mModel.getAnySignalTransitionsForState(stateRef);
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(mModel.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
         emitLocalSpecificSignalSpyHandler(stateRef, javaWriter);
         emitLocalAnySignalSpyHandler(stateRef, javaWriter);
 
-        HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = mModel.mLocalSpecificSignalConnectionsPerStateGroupedBySignal.get(stateRef.getName());
+        HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = mModel.getLocalSignalTransitionsPerSignalForState(stateRef);
         if (connectionsPerSignal != null) {
             javaWriter.emitEmptyLine();
             for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
@@ -342,7 +327,7 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void emitLocalAnySignalSpyHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        ArrayList<ConnectionRef> localAnySignalSpies = mModel.mLocalAnySignalSpies.get(stateRef.getName());
+        ArrayList<ConnectionRef> localAnySignalSpies = mModel.getLocalAnySignalSpiesForState(stateRef);
         if (localAnySignalSpies != null) {
             javaWriter.emitEmptyLine();
             for (ConnectionRef connection : localAnySignalSpies) {
@@ -352,7 +337,7 @@ public class StateMachineProcessor extends AbstractProcessor {
     }
 
     private void emitLocalSpecificSignalSpyHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = mModel.mLocalSpecificSignalSpiesPerStateGroupedBySignal.get(stateRef.getName());
+        HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = mModel.getLocalSignalSpiesPerSignalForState(stateRef);
         if (connectionsPerSignal != null) {
             javaWriter.emitEmptyLine();
             for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
@@ -391,7 +376,7 @@ public class StateMachineProcessor extends AbstractProcessor {
 
         javaWriter.beginControlFlow("switch (mCurrentState)");
 
-        for (StateRef state : mModel.mStates) {
+        for (StateRef state : mModel.getStates()) {
             javaWriter.emitStatement("case %s: nextState = handleSignalIn%s(signal, payload); break",
                     state.getName(), camelCase(state.getName()));
         }
@@ -479,266 +464,6 @@ public class StateMachineProcessor extends AbstractProcessor {
         mModel.add(connectionRef);
     }
 
-    private static class Model {
-
-        private ArrayList<SignalRef> mSignals = new ArrayList<>();
-        private HashMap<String, ArrayList<ConnectionRef>> mLocalSpecificSignalConnections = new HashMap<>();
-        private HashMap<String, ArrayList<ConnectionRef>> mLocalAnySignalSpies = new HashMap<>();
-        private HashMap<String, ArrayList<ConnectionRef>> mLocalSpecificSignalSpies = new HashMap<>();
-        private HashMap<String, ArrayList<ConnectionRef>> mLocalAnySignalConnections = new HashMap<>();
-        private ArrayList<ConnectionRef> mGlobalSpecificSignalSpies = new ArrayList<>();
-        private ArrayList<ConnectionRef> mGlobalAnySignalSpies = new ArrayList<>();
-        private ArrayList<ConnectionRef> mGlobalSpecificSignalConnections = new ArrayList<>();
-        private ArrayList<ConnectionRef> mGlobalAnySignalConnections = new ArrayList<>();
-
-        private ArrayList<StateRef> mStates = new ArrayList<>();
-
-        // Aggregated info
-        private HashMap<String, HashMap<String, ArrayList<ConnectionRef>>> mLocalSpecificSignalConnectionsPerStateGroupedBySignal = new HashMap<>();
-        private HashMap<String, HashMap<String, ArrayList<ConnectionRef>>> mLocalSpecificSignalSpiesPerStateGroupedBySignal = new HashMap<>();
-        private HashMap<String, ArrayList<ConnectionRef>> mGlobalSpecificSignalSpiesPerSignal = new HashMap<>();
-        private HashMap<String, ArrayList<ConnectionRef>> mGlobalSpecificSignalConnectionsPerSignal = new HashMap<>();
-
-        private String mSignalsEnumClassQualifiedName;
-        private String mStatesEnumClassQualifiedName;
-        private String mSignalsEnumName;
-
-        public String getStatesEnumName() {
-            return mStatesEnumName;
-        }
-
-        public String getSignalsEnumQualifiedName() {
-            return mSignalsEnumClassQualifiedName;
-        }
-
-        public String getStatesEnumQualifiedName() {
-            return mStatesEnumClassQualifiedName;
-        }
-
-        public String getSignalsEnumName() {
-            return mSignalsEnumName;
-        }
-
-        private String mStatesEnumName;
-
-        public void add(SignalRef signal) {
-            mSignals.add(signal);
-        }
-
-        public void add(ConnectionRef connection) {
-            boolean hasWildcardFrom = ConnectionRef.WILDCARD.equals(connection.getFrom());
-            boolean hasWildcardTo = ConnectionRef.WILDCARD.equals(connection.getTo());
-            boolean hasWildcardSignal = ConnectionRef.WILDCARD.equals(connection.getSignal());
-
-            if (hasWildcardFrom) {
-                // Global
-                if (hasWildcardTo) {
-                    // Eavesdrop
-                    if (hasWildcardSignal) {
-                        // Any signal
-                        addGlobalAnySignalSpy(connection);
-                    } else {
-                        // Specific signal
-                        addGlobalSpecificSignalSpy(connection);
-                    }
-                } else {
-                    // Normal
-                    if (hasWildcardSignal) {
-                        // Any signal
-                        addGlobalAnySignalConnection(connection);
-                    } else {
-                        // Specific signal
-                        addGlobalSpecificSignalConnection(connection);
-                    }
-                }
-            } else {
-                // Local
-                if (hasWildcardTo) {
-                    // Eavesdrop
-                    if (hasWildcardSignal) {
-                        // Any signal
-                        addLocalAnySignalSpy(connection);
-                    } else {
-                        // Specific signal
-                        addLocalSpecificSignalSpy(connection);
-                    }
-                } else {
-                    // Normal
-                    if (hasWildcardSignal) {
-                        // Any signal
-                        addLocalAnySignalConnection(connection);
-                    } else {
-                        // Specific signal
-                        addLocalSpecificSignalConnection(connection);
-                    }
-                }
-            }
-        }
-
-        private void addLocalAnySignalConnection(ConnectionRef connection) {
-            ArrayList<ConnectionRef> connections = mLocalAnySignalConnections.get(connection.getFrom());
-            if (connections == null) {
-                connections = new ArrayList<>();
-            }
-            connections.add(connection);
-            mLocalAnySignalConnections.put(connection.getFrom(), connections);
-        }
-
-        private void addLocalSpecificSignalSpy(ConnectionRef connection) {
-            ArrayList<ConnectionRef> connections = mLocalSpecificSignalSpies.get(connection.getFrom());
-            if (connections == null) {
-                connections = new ArrayList<>();
-            }
-            connections.add(connection);
-            mLocalSpecificSignalSpies.put(connection.getFrom(), connections);
-        }
-
-        private void addLocalAnySignalSpy(ConnectionRef connection) {
-            ArrayList<ConnectionRef> connections = mLocalAnySignalSpies.get(connection.getFrom());
-            if (connections == null) {
-                connections = new ArrayList<>();
-            }
-            connections.add(connection);
-            mLocalAnySignalSpies.put(connection.getFrom(), connections);
-        }
-
-        private void addGlobalSpecificSignalConnection(ConnectionRef connection) {
-            mGlobalSpecificSignalConnections.add(connection);
-        }
-
-        private void addGlobalAnySignalConnection(ConnectionRef connection) {
-            mGlobalAnySignalConnections.add(connection);
-        }
-
-        private void addGlobalAnySignalSpy(ConnectionRef connection) {
-            mGlobalAnySignalSpies.add(connection);
-        }
-
-        private void addGlobalSpecificSignalSpy(ConnectionRef connection) {
-            mGlobalSpecificSignalSpies.add(connection);
-        }
-
-        private void addLocalSpecificSignalConnection(ConnectionRef connection) {
-            ArrayList<ConnectionRef> connectionsForFromState = mLocalSpecificSignalConnections.get(connection.getFrom());
-            if (connectionsForFromState == null) {
-                connectionsForFromState = new ArrayList<>();
-            }
-            connectionsForFromState.add(connection);
-            mLocalSpecificSignalConnections.put(connection.getFrom(), connectionsForFromState);
-        }
-
-        public void add(StateRef state) {
-            mStates.add(state);
-        }
-
-        public void describeContents(JavaWriter javaWriter) throws IOException {
-            javaWriter.emitSingleLineComment("--- States ---");
-            for (StateRef stateRef : mStates) {
-                javaWriter.emitSingleLineComment(" " + stateRef);
-            }
-
-            javaWriter.emitEmptyLine();
-            javaWriter.emitSingleLineComment("--- Signals ---");
-            for (SignalRef signalRef : mSignals) {
-                javaWriter.emitSingleLineComment(" " + signalRef);
-            }
-
-            javaWriter.emitEmptyLine();
-            javaWriter.emitSingleLineComment("--- Connections ---");
-            for (Map.Entry<String, ArrayList<ConnectionRef>> connectionEntry : mLocalSpecificSignalConnections.entrySet()) {
-                javaWriter.emitSingleLineComment("");
-                javaWriter.emitSingleLineComment(" State: " + connectionEntry.getKey());
-                for (ConnectionRef connection : connectionEntry.getValue()) {
-                    javaWriter.emitSingleLineComment("   " + connection);
-                }
-            }
-        }
-
-        public void setSignalsEnum(TypeElement element) {
-            mSignalsEnumClassQualifiedName = element.getQualifiedName().toString();
-            mSignalsEnumName = element.getSimpleName().toString();
-        }
-
-        public void setStatesEnum(TypeElement element) {
-            mStatesEnumClassQualifiedName = element.getQualifiedName().toString();
-            mStatesEnumName = element.getSimpleName().toString();
-        }
-
-        public void aggregateConnectionsPerSignal() {
-            aggregateLocalSpecificSignalConnectionsPerSignalPerState();
-            aggregateGlobalSpecificSpiesPerSignal();
-            aggregateLocalSpecificSpiesPerSignal();
-            aggregateGlobalSpecificSignalConnectionsPerSignal();
-        }
-
-        private void aggregateGlobalSpecificSignalConnectionsPerSignal() {
-            for (ConnectionRef globalSpecificConnection : mGlobalSpecificSignalConnections) {
-                ArrayList<ConnectionRef> connections =
-                        mGlobalSpecificSignalConnectionsPerSignal.get(globalSpecificConnection.getSignal());
-                if (connections == null) {
-                    connections = new ArrayList<>();
-                }
-                connections.add(globalSpecificConnection);
-                mGlobalSpecificSignalConnectionsPerSignal.put(globalSpecificConnection.getSignal(), connections);
-            }
-        }
-
-        private void aggregateLocalSpecificSpiesPerSignal() {
-            // Loop over all states and check their local specific spy connections
-            for (Map.Entry<String, ArrayList<ConnectionRef>> spiesPerState : mLocalSpecificSignalSpies.entrySet()) {
-                // Key is the state name
-                // Value is the local specific signal spy for the state
-                String stateName = spiesPerState.getKey();
-                ArrayList<ConnectionRef> spiesForState = spiesPerState.getValue();
-                HashMap<String, ArrayList<ConnectionRef>> spiesPerSignalInState = new HashMap<>();
-
-                // We group the connections for the state by signal instead
-                for (ConnectionRef connection: spiesForState) {
-                    ArrayList<ConnectionRef> connections = spiesPerSignalInState.get(connection.getSignal());
-                    if (connections == null) {
-                        connections = new ArrayList<>();
-                    }
-                    connections.add(connection);
-                    spiesPerSignalInState.put(connection.getSignal(), connections);
-                }
-                mLocalSpecificSignalSpiesPerStateGroupedBySignal.put(stateName, spiesPerSignalInState);
-            }
-        }
-
-        private void aggregateGlobalSpecificSpiesPerSignal() {
-            for (ConnectionRef globalSpecificSpy : mGlobalSpecificSignalSpies) {
-                ArrayList<ConnectionRef> connections =
-                        mGlobalSpecificSignalSpiesPerSignal.get(globalSpecificSpy.getSignal());
-                if (connections == null) {
-                    connections = new ArrayList<>();
-                }
-                connections.add(globalSpecificSpy);
-                mGlobalSpecificSignalSpiesPerSignal.put(globalSpecificSpy.getSignal(), connections);
-            }
-        }
-
-        private void aggregateLocalSpecificSignalConnectionsPerSignalPerState() {
-            // Loop over all states and check their local specific signal connections
-            for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsPerState : mLocalSpecificSignalConnections.entrySet()) {
-                // Key is the state name
-                // Value is the local specific signal connections for the state
-                String stateName = connectionsPerState.getKey();
-                ArrayList<ConnectionRef> connectionsForState = connectionsPerState.getValue();
-                HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignalInState = new HashMap<>();
-
-                // We group the connections for the state by signal instead
-                for (ConnectionRef connection: connectionsForState) {
-                    ArrayList<ConnectionRef> connections = connectionsPerSignalInState.get(connection.getSignal());
-                    if (connections == null) {
-                        connections = new ArrayList<>();
-                    }
-                    connections.add(connection);
-                    connectionsPerSignalInState.put(connection.getSignal(), connections);
-                }
-                mLocalSpecificSignalConnectionsPerStateGroupedBySignal.put(stateName, connectionsPerSignalInState);
-            }
-        }
-    }
 
     private static String camelCase(String string) {
         return string.substring(0, 1).toUpperCase() + string.substring(1).toLowerCase();
