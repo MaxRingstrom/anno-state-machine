@@ -3,11 +3,13 @@ package com.jayway.annostatemachine.processor;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.SignalRef;
 import com.jayway.annostatemachine.StateRef;
+import com.jayway.annostatemachine.annotations.Connection;
 import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.processing.Messager;
@@ -185,11 +187,82 @@ class Model {
 
         javaWriter.emitEmptyLine();
         javaWriter.emitSingleLineComment("--- Connections ---");
-        for (Map.Entry<String, ArrayList<ConnectionRef>> connectionEntry : mLocalSignalTransitions.entrySet()) {
+
+        if (mGlobalSignalTransitions != null && mGlobalSignalTransitions.size() > 0) {
             javaWriter.emitSingleLineComment("");
-            javaWriter.emitSingleLineComment(" State: " + connectionEntry.getKey());
-            for (ConnectionRef connection : connectionEntry.getValue()) {
-                javaWriter.emitSingleLineComment("   " + connection);
+            javaWriter.emitSingleLineComment(" Global signal transitions: ");
+            for (ConnectionRef transition : mGlobalSignalTransitions) {
+                javaWriter.emitSingleLineComment("  " + transition);
+            }
+        }
+
+        if (mGlobalAnySignalTransitions != null && mGlobalAnySignalTransitions.size() > 0) {
+            javaWriter.emitSingleLineComment("");
+            javaWriter.emitSingleLineComment(" Global any signal transitions: ");
+            for (ConnectionRef transition : mGlobalAnySignalTransitions) {
+                javaWriter.emitSingleLineComment("  " + transition);
+            }
+        }
+
+        if (mGlobalSignalSpies != null && mGlobalSignalSpies.size() > 0) {
+            javaWriter.emitSingleLineComment("");
+            javaWriter.emitSingleLineComment(" Global signal spies: ");
+            for (ConnectionRef transition : mGlobalSignalSpies) {
+                javaWriter.emitSingleLineComment("  " + transition);
+            }
+        }
+
+        if (mGlobalAnySignalSpies != null && mGlobalAnySignalSpies.size() > 0) {
+            javaWriter.emitSingleLineComment("");
+            javaWriter.emitSingleLineComment(" Global any signal spies: ");
+            for (ConnectionRef transition : mGlobalAnySignalSpies) {
+                javaWriter.emitSingleLineComment("  " + transition);
+            }
+        }
+
+        List<ConnectionRef> localSignalTransitions;
+        List<ConnectionRef> localAnySignalTransitions;
+        List<ConnectionRef> localSignalSpies;
+        List<ConnectionRef> localAnySignalSpies;
+
+        for (StateRef state : mStates) {
+            javaWriter.emitSingleLineComment("");
+            javaWriter.emitSingleLineComment(" State: " + state.getName());
+
+            localSignalTransitions = mLocalSignalTransitions.get(state.getName());
+            if (localSignalTransitions != null && localSignalTransitions.size() > 0) {
+                javaWriter.emitSingleLineComment("  Local signal transitions:");
+                for (ConnectionRef transition : mLocalSignalTransitions.get(state.getName())) {
+                    javaWriter.emitSingleLineComment("    " + transition);
+                }
+                javaWriter.emitSingleLineComment("");
+            }
+
+            localAnySignalTransitions = mLocalAnySignalTransitions.get(state.getName());
+            if (localAnySignalTransitions != null && localAnySignalTransitions.size() > 0) {
+                javaWriter.emitSingleLineComment("  Local any signal transitions:");
+                for (ConnectionRef transition : mLocalAnySignalTransitions.get(state.getName())) {
+                    javaWriter.emitSingleLineComment("    " + transition);
+                }
+                javaWriter.emitSingleLineComment("");
+            }
+
+            localSignalSpies = mLocalSignalSpies.get(state.getName());
+            if (localSignalSpies != null && localSignalSpies.size() > 0) {
+                javaWriter.emitSingleLineComment("  Local signal spies:");
+                for (ConnectionRef spy : mLocalSignalSpies.get(state.getName())) {
+                    javaWriter.emitSingleLineComment("    " + spy);
+                }
+                javaWriter.emitSingleLineComment("");
+            }
+
+            localAnySignalSpies = mLocalAnySignalSpies.get(state.getName());
+            if (localAnySignalSpies != null && localAnySignalSpies.size() > 0) {
+                javaWriter.emitSingleLineComment("  Local any signal spies:");
+                for (ConnectionRef spy : mLocalAnySignalSpies.get(state.getName())) {
+                    javaWriter.emitSingleLineComment("    " + spy);
+                }
+                javaWriter.emitSingleLineComment("");
             }
         }
     }
