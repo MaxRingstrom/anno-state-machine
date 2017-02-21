@@ -3,7 +3,6 @@ package com.jayway.annostatemachine.processor;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.SignalRef;
 import com.jayway.annostatemachine.StateRef;
-import com.jayway.annostatemachine.annotations.Connection;
 import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
@@ -426,6 +425,7 @@ class Model {
 
     /**
      * Set the target class information. This is the generated state machine implementation class.
+     *
      * @param targetPackage
      * @param targetClassName
      * @param targetClassQualifiedName

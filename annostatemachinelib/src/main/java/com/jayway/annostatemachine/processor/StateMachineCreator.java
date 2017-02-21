@@ -199,6 +199,8 @@ final class StateMachineCreator {
                         StateMachineEventListener.class.getCanonicalName());
                 javaWriter.emitStaticImports(model.getSourceQualifiedName() + ".*");
                 javaWriter.emitEmptyLine();
+
+                emitClassJavaDoc(model, javaWriter);
                 javaWriter.beginType(model.getTargetClassName(), "class", EnumSet.of(Modifier.PUBLIC), model.getSourceClassName());
 
                 model.describeContents(javaWriter);
@@ -228,6 +230,11 @@ final class StateMachineCreator {
             e.printStackTrace();
         }
 
+    }
+
+    private void emitClassJavaDoc(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitJavadoc("A state machine implementation of the declaration found in {@link %s %s}.\nNote that this class has been generated. Any changes will be overwritten.\n\nEdit {@link %s, %s} to change the state machine declaration.",
+                model.getSourceClassName(), model.getSourceClassName(), model.getSourceClassName(), model.getSourceClassName());
     }
 
 
