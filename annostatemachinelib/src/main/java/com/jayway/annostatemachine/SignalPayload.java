@@ -2,9 +2,10 @@ package com.jayway.annostatemachine;
 
 import java.util.HashMap;
 
-public class SignalPayload {
+public class SignalPayload<T extends Enum> {
     private HashMap<String, Boolean> mBooleanMap;
     private HashMap<String, Integer> mIntegerMap;
+    private T mSignal;
 
     public SignalPayload put(String key, Boolean value) {
         if (mBooleanMap == null) {
@@ -16,7 +17,7 @@ public class SignalPayload {
 
     public SignalPayload put(String key, Integer value) {
         if(this.mIntegerMap == null) {
-            this.mIntegerMap = new HashMap();
+            this.mIntegerMap = new HashMap<>();
         }
 
         this.mIntegerMap.put(key, value);
@@ -37,5 +38,14 @@ public class SignalPayload {
         }
         Integer mapValue = mIntegerMap.get(key);
         return mapValue == null ? defaultValue : mapValue;
+    }
+
+    // Intentionally set to package-private so that the signal is not modified by client code.
+    void setSignal(T signal) {
+        mSignal = signal;
+    }
+
+    public T getSignal() {
+        return mSignal;
     }
 }

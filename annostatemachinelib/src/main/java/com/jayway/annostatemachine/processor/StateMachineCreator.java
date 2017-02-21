@@ -3,6 +3,7 @@ package com.jayway.annostatemachine.processor;
 
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.NullEventListener;
+import com.jayway.annostatemachine.PayloadModifier;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.StateRef;
@@ -196,7 +197,8 @@ final class StateMachineCreator {
                 javaWriter.emitImports(model.getSourceQualifiedName(),
                         SignalPayload.class.getCanonicalName(),
                         NullEventListener.class.getCanonicalName(),
-                        StateMachineEventListener.class.getCanonicalName());
+                        StateMachineEventListener.class.getCanonicalName(),
+                        PayloadModifier.class.getCanonicalName());
                 javaWriter.emitStaticImports(model.getSourceQualifiedName() + ".*");
                 javaWriter.emitEmptyLine();
 
@@ -285,6 +287,12 @@ final class StateMachineCreator {
     private void generateSendMethods(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+
+        javaWriter.beginControlFlow("if (payload == null)");
+        javaWriter.emitStatement("payload = new SignalPayload()");
+        javaWriter.endControlFlow();
+        javaWriter.emitStatement("PayloadModifier.setSignalOnPayload(signal, payload)");
+        javaWriter.emitEmptyLine();
 
         javaWriter.beginControlFlow("if (mWaitingForInit)");
         javaWriter.emitStatement("throw new IllegalStateException(\"Missing call to init\")");

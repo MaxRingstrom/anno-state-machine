@@ -16,7 +16,9 @@ import com.jayway.annostatemachine.annotations.States;
 import com.jayway.annostatemachine.generated.MainViewStateMachineImpl;
 
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.KEY_CHECKBOX_CHECKED;
-import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.*;
+import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.CheckBoxCheckStateChanged;
+import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.ContentLoaded;
+import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.Start;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,7 +34,7 @@ public class MainActivity extends AppCompatActivity {
         stateMachine.init(MainViewStateMachine.State.Init, new StateMachineEventListener() {
             @Override
             public void onDispatchingSignal(Object o, Object o1) {
-                Log.d(TAG, o1 +  "->[" + o + "]");
+                Log.d(TAG, o1 + "->[" + o + "]");
             }
 
             @Override
@@ -78,10 +80,14 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @States
-        public enum State { Init, LoadingContent, UpAndRunning, Done, Error }
+        public enum State {
+            Init, LoadingContent, UpAndRunning, Done, Error
+        }
 
         @Signals
-        public enum Signal { Start, ContentLoaded, CheckBoxCheckStateChanged }
+        public enum Signal {
+            Start, ContentLoaded, CheckBoxCheckStateChanged
+        }
 
         @Connection(from = "Init", to = "LoadingContent", signal = "Start")
         public boolean startLoadingContent(SignalPayload payload) {
@@ -103,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "LoadingContent", to="*", signal="ContentLoaded")
+        @Connection(from = "LoadingContent", to = "*", signal = "ContentLoaded")
         public boolean eavesdropOnContentLoaded(SignalPayload payload) {
             Log.d(TAG, "Eavesdropped that content has loaded");
             return false;
