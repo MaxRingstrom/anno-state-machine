@@ -2,24 +2,14 @@ package com.jayway.annostatemachine.processor;
 
 
 import com.jayway.annostatemachine.ConnectionRef;
-import com.jayway.annostatemachine.NullEventListener;
-import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.SignalRef;
-import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.StateRef;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
-import com.squareup.javawriter.JavaWriter;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
@@ -29,15 +19,8 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ElementVisitor;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Modifier;
-import javax.lang.model.element.PackageElement;
 import javax.lang.model.element.TypeElement;
-import javax.lang.model.element.TypeParameterElement;
-import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
-import javax.tools.JavaFileObject;
 
 // Notes
 // Add general signal handler that can act on multiple from states
@@ -45,24 +28,30 @@ import javax.tools.JavaFileObject;
 
 @SupportedAnnotationTypes("com.jayway.annostatemachine.annotations.StateMachine")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
-public class StateMachineProcessor extends AbstractProcessor {
+final public class StateMachineProcessor extends AbstractProcessor {
 
     private static final String TAG = StateMachineProcessor.class.getSimpleName();
-    private static final String NEWLINE = "\n\n";
     private static final String GENERATED_FILE_SUFFIX = "Impl";
+    private final StateMachineCreator mStateMachineCreator;
 
     private Model mModel = new Model();
-    private String mStateMachineSourceQualifiedName;
+
+    public StateMachineProcessor() {
+        super();
+        mStateMachineCreator = new StateMachineCreator();
+    }
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (Element element : roundEnv.getElementsAnnotatedWith(StateMachine.class)) {
-            // Clean model for each statemachine source file
+            // Clean model for each state machine source file
             mModel = new Model();
             if (element.getKind().isClass()) {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
                         "Statemachine found: " + ((TypeElement) element).getQualifiedName().toString());
-                generateStateMachine(element, roundEnv);
+                generateModel(element);
+                mModel.validateModel(element.getSimpleName().toString(), processingEnv.getMessager());
+                mStateMachineCreator.writeStateMachine(element, mModel, processingEnv);
             } else {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                         "Non class using " + StateMachine.class.getSimpleName() + " annotation");
@@ -71,9 +60,9 @@ public class StateMachineProcessor extends AbstractProcessor {
         return true;
     }
 
-    private void generateStateMachine(Element element, RoundEnvironment roundEnv) {
-        mStateMachineSourceQualifiedName = ((TypeElement) element).getQualifiedName().toString();
-
+    private void generateModel(Element element) {
+        // Find the top element in order to get the package name that the source class resides in
+        // even if it is an inner class.
         Element topElement = element;
         while (((TypeElement) topElement).getNestingKind().isNested()) {
             topElement = element.getEnclosingElement();
@@ -81,327 +70,16 @@ public class StateMachineProcessor extends AbstractProcessor {
 
         String topElementQualifiedName = ((TypeElement) topElement).getQualifiedName().toString();
         String sourceClassPackage = topElementQualifiedName.substring(0, topElementQualifiedName.lastIndexOf("."));
-        String generatedPackage = sourceClassPackage + ".generated";
+        String sourceClassQualifiedName = ((TypeElement) element).getQualifiedName().toString();
+        String sourceClassName = element.getSimpleName().toString();
 
+        String generatedPackage = sourceClassPackage + ".generated";
         String generatedClassName = element.getSimpleName() + GENERATED_FILE_SUFFIX;
         String generatedClassFullPath = generatedPackage + "." + generatedClassName;
 
-        JavaFileObject source;
-        try {
-            source = processingEnv.getFiler().createSourceFile(generatedClassFullPath);
-            try (Writer writer = source.openWriter(); JavaWriter javaWriter = new JavaWriter(writer)) {
-                generateMetadata(element, writer, javaWriter);
+        mModel.setSource(sourceClassQualifiedName, sourceClassName);
+        mModel.setTarget(generatedPackage, generatedClassName, generatedClassFullPath);
 
-                javaWriter.emitPackage(generatedPackage);
-                javaWriter.emitImports(mStateMachineSourceQualifiedName,
-                        SignalPayload.class.getCanonicalName(),
-                        NullEventListener.class.getCanonicalName(),
-                        StateMachineEventListener.class.getCanonicalName());
-                javaWriter.emitStaticImports(mStateMachineSourceQualifiedName + ".*");
-                javaWriter.emitEmptyLine();
-                javaWriter.beginType(generatedClassName, "class", EnumSet.of(Modifier.PUBLIC), element.getSimpleName().toString());
-
-                mModel.describeContents(javaWriter);
-
-                mModel.validateModel(mStateMachineSourceQualifiedName, processingEnv.getMessager());
-
-                generateFields(javaWriter);
-
-                generatePassThroughConstructors(element, generatedClassName, javaWriter);
-
-                generateInitMethod(javaWriter);
-
-                generateSignalDispatcher(javaWriter);
-
-                generateSignalHandlersForStates(javaWriter);
-
-                generateSendMethods(javaWriter);
-                generateSwitchStateMethod(javaWriter);
-
-                // End class
-                javaWriter.emitEmptyLine();
-                javaWriter.endType();
-
-                writer.close();
-            }
-        } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                    "Couldn't create generated state machine class: " + generatedClassName);
-            e.printStackTrace();
-        }
-    }
-
-    private void emitGlobalAnySignalConnectionHandler(JavaWriter javaWriter) throws IOException {
-        List<ConnectionRef> globalAnySignalTransitions = mModel.getGlobalAnySignalTransitions();
-        if (globalAnySignalTransitions.size() == 0) {
-            return;
-        }
-        javaWriter.emitEmptyLine();
-
-        for (ConnectionRef connection : globalAnySignalTransitions) {
-            javaWriter.emitStatement("if (%s(payload)) return %s",
-                    connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
-        }
-    }
-
-    private void emitGlobalSpecificSignalConnectionHandler(JavaWriter javaWriter) throws IOException {
-        HashMap<String, ArrayList<ConnectionRef>>
-                globalSpecificSignalTransitionsPerSignal = mModel.getGlobalSignalTransitionsPerSignal();
-        if (globalSpecificSignalTransitionsPerSignal.size() == 0) {
-            return;
-        }
-
-        for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : globalSpecificSignalTransitionsPerSignal.entrySet()) {
-            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connectionsForSignal.getKey() + "))");
-            for (ConnectionRef connection : connectionsForSignal.getValue()) {
-                javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
-            }
-            javaWriter.endControlFlow();
-        }
-    }
-
-    private void emitGlobalAnySignalSpyHandler(JavaWriter javaWriter) throws IOException {
-        ArrayList<ConnectionRef> globalAnySignalSpies = mModel.getGlobalAnySignalSpies();
-        if (globalAnySignalSpies.size() == 0) {
-            return;
-        }
-        javaWriter.emitEmptyLine();
-
-        for (ConnectionRef connection : globalAnySignalSpies) {
-            javaWriter.emitStatement("%s(payload)", connection.getName());
-        }
-    }
-
-    private void emitGlobalSpecificSignalSpyHandler(JavaWriter javaWriter) throws IOException {
-        HashMap<String, ArrayList<ConnectionRef>> globalSignalSpiesPerSignal = mModel.getGlobalSignalSpiesPerSignal();
-        if (globalSignalSpiesPerSignal.size() == 0) {
-            return;
-        }
-        javaWriter.emitEmptyLine();
-
-        for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : globalSignalSpiesPerSignal.entrySet()) {
-            javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connectionsForSignal.getKey() + "))");
-            for (ConnectionRef connection : connectionsForSignal.getValue()) {
-                javaWriter.emitStatement("%s(payload)", connection.getName());
-            }
-            javaWriter.endControlFlow();
-        }
-    }
-
-    private void generatePassThroughConstructors(Element element, final String generatedClassName, final JavaWriter javaWriter) throws IOException {
-        javaWriter.emitEmptyLine();
-        List<? extends Element> elements = element.getEnclosedElements();
-        for (final Element childElement : elements) {
-            if (childElement.getKind() == ElementKind.CONSTRUCTOR) {
-                childElement.accept(new ElementVisitor<Object, Object>() {
-                    @Override
-                    public Object visit(Element e, Object o) {
-                        return null;
-                    }
-
-                    @Override
-                    public Object visit(Element e) {
-                        return null;
-                    }
-
-                    @Override
-                    public Object visitPackage(PackageElement e, Object o) {
-                        return null;
-                    }
-
-                    @Override
-                    public Object visitType(TypeElement e, Object o) {
-                        return null;
-                    }
-
-                    @Override
-                    public Object visitVariable(VariableElement e, Object o) {
-                        return null;
-                    }
-
-                    @Override
-                    public Object visitExecutable(ExecutableElement e, Object o) {
-                        List<String> params = new ArrayList<String>();
-                        String paramListString = "";
-                        String paramType;
-                        String paramName;
-                        for (VariableElement el : e.getParameters()) {
-                            paramType = el.asType().toString();
-                            paramName = el.getSimpleName().toString();
-                            params.add(paramType);
-                            params.add(paramName);
-                            paramListString += (paramName + ",");
-                        }
-                        if (!paramListString.isEmpty()) {
-                            // Remove trailing ,
-                            paramListString = paramListString.substring(0, paramListString.length() - 1);
-                        }
-                        try {
-                            javaWriter.beginMethod(null, generatedClassName, EnumSet.of(Modifier.PUBLIC), params, null);
-                            javaWriter.emitStatement("super(%s)", paramListString);
-                            javaWriter.endMethod();
-                        } catch (IOException e1) {
-                            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Error when creating pass through constructor");
-                            e1.printStackTrace();
-                        }
-                        return null;
-                    }
-
-                    @Override
-                    public Object visitTypeParameter(TypeParameterElement e, Object o) {
-                        return null;
-                    }
-
-                    @Override
-                    public Object visitUnknown(Element e, Object o) {
-                        return null;
-                    }
-                }, element);
-            }
-        }
-    }
-
-    private void generateSendMethods(JavaWriter javaWriter) throws IOException {
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
-
-        javaWriter.beginControlFlow("if (mWaitingForInit)");
-        javaWriter.emitStatement("throw new IllegalStateException(\"Missing call to init\")");
-        javaWriter.endControlFlow();
-
-        javaWriter.emitStatement(mModel.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
-        javaWriter.beginControlFlow("if (nextState != null)");
-        javaWriter.emitStatement("switchState(nextState)");
-        javaWriter.endControlFlow();
-        javaWriter.endMethod();
-
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), mModel.getSignalsEnumName(), "signal");
-        javaWriter.emitStatement("send(signal, null)");
-        javaWriter.endMethod();
-    }
-
-    private void generateSwitchStateMethod(JavaWriter javaWriter) throws IOException {
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod("void", "switchState", EnumSet.of(Modifier.PRIVATE), mModel.getStatesEnumName(), "nextState");
-        javaWriter.emitStatement("mEventListener.onChangingState(mCurrentState, nextState)");
-        javaWriter.emitStatement("mCurrentState = nextState");
-        javaWriter.endMethod();
-    }
-
-    private void generateSignalHandlersForStates(JavaWriter javaWriter) throws IOException {
-        for (StateRef stateRef : mModel.getStates()) {
-            generateSignalHandler(stateRef, javaWriter);
-        }
-    }
-
-    private void generateSignalHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        ArrayList<ConnectionRef> anySignalConnectionsForState = mModel.getAnySignalTransitionsForState(stateRef);
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(mModel.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
-
-        emitLocalSpecificSignalSpyHandler(stateRef, javaWriter);
-        emitLocalAnySignalSpyHandler(stateRef, javaWriter);
-
-        HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = mModel.getLocalSignalTransitionsPerSignalForState(stateRef);
-        if (connectionsPerSignal != null) {
-            javaWriter.emitEmptyLine();
-            for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
-                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connectionsForSignalEntry.getKey() + "))");
-                for (ConnectionRef connectionForSignal : connectionsForSignalEntry.getValue()) {
-                    javaWriter.emitStatement("if (%s(payload)) return %s", connectionForSignal.getName(), mModel.getStatesEnumName() + "." + connectionForSignal.getTo());
-                }
-                javaWriter.endControlFlow();
-            }
-        }
-
-        if (anySignalConnectionsForState != null) {
-            javaWriter.emitEmptyLine();
-            for (ConnectionRef connection : anySignalConnectionsForState) {
-                javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), mModel.getStatesEnumName() + "." + connection.getTo());
-            }
-        }
-
-        javaWriter.emitStatement("return null");
-        javaWriter.endMethod();
-    }
-
-    private void emitLocalAnySignalSpyHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        ArrayList<ConnectionRef> localAnySignalSpies = mModel.getLocalAnySignalSpiesForState(stateRef);
-        if (localAnySignalSpies != null) {
-            javaWriter.emitEmptyLine();
-            for (ConnectionRef connection : localAnySignalSpies) {
-                javaWriter.emitStatement("%s(payload)", connection.getName());
-            }
-        }
-    }
-
-    private void emitLocalSpecificSignalSpyHandler(StateRef stateRef, JavaWriter javaWriter) throws IOException {
-        HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = mModel.getLocalSignalSpiesPerSignalForState(stateRef);
-        if (connectionsPerSignal != null) {
-            javaWriter.emitEmptyLine();
-            for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
-                javaWriter.beginControlFlow("if (signal.equals(" + mModel.getSignalsEnumName() + "." + connectionsForSignalEntry.getKey() + "))");
-                for (ConnectionRef connectionForSignal : connectionsForSignalEntry.getValue()) {
-                    javaWriter.emitStatement("%s(payload)", connectionForSignal.getName());
-                }
-                javaWriter.endControlFlow();
-            }
-        }
-    }
-
-    private void generateFields(JavaWriter javaWriter) throws IOException {
-        javaWriter.emitEmptyLine();
-        javaWriter.emitField(mModel.getStatesEnumName(), "mCurrentState", EnumSet.of(Modifier.PRIVATE));
-        javaWriter.emitField("boolean", "mWaitingForInit", EnumSet.of(Modifier.PRIVATE), "true");
-        javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
-    }
-
-    private void generateInitMethod(JavaWriter javaWriter) throws IOException {
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), mModel.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener");
-        javaWriter.emitStatement("mCurrentState = startingState");
-        javaWriter.emitStatement("mEventListener = eventListener != null ? eventListener : new NullEventListener()");
-        javaWriter.emitStatement("mWaitingForInit = false");
-        javaWriter.endMethod();
-    }
-
-    private void generateSignalDispatcher(JavaWriter javaWriter) throws IOException {
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(mModel.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE), mModel.getSignalsEnumName(), "signal", "SignalPayload", "payload");
-        javaWriter.emitStatement(mModel.getStatesEnumName() + " nextState = null");
-        javaWriter.emitStatement("mEventListener.onDispatchingSignal(mCurrentState, signal)");
-
-        javaWriter.emitEmptyLine();
-
-        javaWriter.beginControlFlow("switch (mCurrentState)");
-
-        for (StateRef state : mModel.getStates()) {
-            javaWriter.emitStatement("case %s: nextState = handleSignalIn%s(signal, payload); break",
-                    state.getName(), camelCase(state.getName()));
-        }
-
-        javaWriter.endControlFlow();
-
-        emitGlobalSpecificSignalSpyHandler(javaWriter);
-        emitGlobalAnySignalSpyHandler(javaWriter);
-
-        javaWriter.emitEmptyLine();
-
-        javaWriter.beginControlFlow("if (nextState == null)");
-        emitGlobalSpecificSignalConnectionHandler(javaWriter);
-        emitGlobalAnySignalConnectionHandler(javaWriter);
-        javaWriter.endControlFlow();
-
-        javaWriter.emitEmptyLine();
-
-        javaWriter.emitStatement("return nextState");
-
-        javaWriter.endMethod();
-    }
-
-    private void generateMetadata(Element element, Writer writer, JavaWriter javaWriter) throws IOException {
-        javaWriter.emitEmptyLine();
         for (Element enclosedElement : element.getEnclosedElements()) {
             if (enclosedElement.getAnnotation(States.class) != null) {
                 collectStates(enclosedElement);
@@ -411,6 +89,7 @@ public class StateMachineProcessor extends AbstractProcessor {
                 collectConnection(enclosedElement);
             }
         }
+
         mModel.aggregateConnectionsPerSignal();
     }
 
@@ -464,8 +143,4 @@ public class StateMachineProcessor extends AbstractProcessor {
         mModel.add(connectionRef);
     }
 
-
-    private static String camelCase(String string) {
-        return string.substring(0, 1).toUpperCase() + string.substring(1).toLowerCase();
-    }
 }
