@@ -252,7 +252,7 @@ final class StateMachineCreator {
 
     private void generateSendMethods(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+        javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC, Modifier.SYNCHRONIZED), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
         javaWriter.beginControlFlow("if (mWaitingForInit)");
         javaWriter.emitStatement("throw new IllegalStateException(\"Missing call to init\")");
