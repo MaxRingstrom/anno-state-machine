@@ -114,7 +114,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
 
     private void collectSignals(Element element) {
         if (!(element.getKind().equals(ElementKind.ENUM))) {
-            // Signal annotation on something other than a enum
+            // Signal annotation on something other than an enum
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "Non enum " + element.getSimpleName() + " of type " + element.getKind() + " using annotation " + Signals.class.getSimpleName());
             return;
