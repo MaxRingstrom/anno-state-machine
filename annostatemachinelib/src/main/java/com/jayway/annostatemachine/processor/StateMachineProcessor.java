@@ -69,6 +69,9 @@ final public class StateMachineProcessor extends AbstractProcessor {
             topElement = element.getEnclosingElement();
         }
 
+        StateMachine stateMachineAnnotation = element.getAnnotation(StateMachine.class);
+        mModel.setDispatchMode(stateMachineAnnotation.dispatchMode(), stateMachineAnnotation.queueId());
+
         String topElementQualifiedName = ((TypeElement) topElement).getQualifiedName().toString();
         String sourceClassPackage = topElementQualifiedName.substring(0, topElementQualifiedName.lastIndexOf("."));
         String sourceClassQualifiedName = ((TypeElement) element).getQualifiedName().toString();

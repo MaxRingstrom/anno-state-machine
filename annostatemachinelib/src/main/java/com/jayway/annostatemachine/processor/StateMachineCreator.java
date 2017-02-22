@@ -2,11 +2,16 @@ package com.jayway.annostatemachine.processor;
 
 
 import com.jayway.annostatemachine.ConnectionRef;
+import com.jayway.annostatemachine.DispatchCallback;
 import com.jayway.annostatemachine.NullEventListener;
 import com.jayway.annostatemachine.PayloadModifier;
+import com.jayway.annostatemachine.SignalDispatcher;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.StateRef;
+import com.jayway.annostatemachine.dispatchers.BackgroundQueueDispatcher;
+import com.jayway.annostatemachine.dispatchers.CallingThreadDispatcher;
+import com.jayway.annostatemachine.dispatchers.SharedBackgroundQueueDispatcher;
 import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
@@ -55,16 +60,18 @@ final class StateMachineCreator {
     /**
      * Emits the field declarations that are needed for the rest of the state machine code.
      */
-    void emitFieldDeclarations(Model model, JavaWriter javaWriter) throws IOException {
+    void generateFieldDeclarations(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.emitField(model.getStatesEnumName(), "mCurrentState", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField("boolean", "mWaitingForInit", EnumSet.of(Modifier.PRIVATE), "true");
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
+        javaWriter.emitField(SignalDispatcher.class.getSimpleName(), "mSignalDispatcher", EnumSet.of(Modifier.PRIVATE));
+        javaWriter.emitField(DispatchCallback.class.getSimpleName()+"<" + model.getSignalsEnumName() + ">", "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
     }
 
-    void emitPassThroughConstructors(Element element, final Model model,
-                                     final Messager messager,
-                                     final JavaWriter javaWriter) throws IOException {
+    void generatePassThroughConstructors(Element element, final Model model,
+                                         final Messager messager,
+                                         final JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         List<? extends Element> elements = element.getEnclosedElements();
         for (final Element childElement : elements) {
@@ -107,7 +114,7 @@ final class StateMachineCreator {
      *
      * @throws IOException
      */
-    void emitSignalDispatcher(Model model, JavaWriter javaWriter) throws IOException {
+    void generateSignalDispatcher(Model model, JavaWriter javaWriter) throws IOException {
 
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(model.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE),
@@ -164,22 +171,40 @@ final class StateMachineCreator {
                         SignalPayload.class.getCanonicalName(),
                         NullEventListener.class.getCanonicalName(),
                         StateMachineEventListener.class.getCanonicalName(),
-                        PayloadModifier.class.getCanonicalName());
+                        PayloadModifier.class.getCanonicalName(),
+                        SignalDispatcher.class.getCanonicalName(),
+                        DispatchCallback.class.getCanonicalName());
+
+                switch (model.getDispatchMode()) {
+                    case BACKGROUND_QUEUE:
+                        javaWriter.emitImports(BackgroundQueueDispatcher.class.getCanonicalName());
+                        break;
+                    case SHARED_BACKGROUND_QUEUE:
+                        javaWriter.emitImports(SharedBackgroundQueueDispatcher.class.getCanonicalName());
+                        break;
+                    case CALLING_THREAD:
+                        // Intentional fall-through
+                    default:
+                        javaWriter.emitImports(CallingThreadDispatcher.class.getCanonicalName());
+                }
+
                 javaWriter.emitStaticImports(model.getSourceQualifiedName() + ".*");
                 javaWriter.emitEmptyLine();
 
-                emitClassJavaDoc(model, javaWriter);
-                javaWriter.beginType(model.getTargetClassName(), "class", EnumSet.of(Modifier.PUBLIC), model.getSourceClassName());
+                generateClassJavaDoc(model, javaWriter);
+                javaWriter.beginType(model.getTargetClassName(), "class", EnumSet.of(Modifier.PUBLIC),
+                        model.getSourceClassName());
 
                 model.describeContents(javaWriter);
 
-                emitFieldDeclarations(model, javaWriter);
+                generateFieldDeclarations(model, javaWriter);
 
-                emitPassThroughConstructors(stateMachineDeclarationElement, model, processingEnv.getMessager(), javaWriter);
+                generatePassThroughConstructors(stateMachineDeclarationElement, model, processingEnv.getMessager(), javaWriter);
 
                 generateInitMethod(model, javaWriter);
 
-                emitSignalDispatcher(model, javaWriter);
+                generateSignalDispatcher(model, javaWriter);
+                generateBlockingDispatchCallback(model, javaWriter);
 
                 generateSignalHandlersForStates(model, javaWriter);
 
@@ -200,7 +225,7 @@ final class StateMachineCreator {
 
     }
 
-    private void emitClassJavaDoc(Model model, JavaWriter javaWriter) throws IOException {
+    private void generateClassJavaDoc(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitJavadoc("A state machine implementation of the declaration found in {@link %s %s}.\nNote that this class has been generated. Any changes will be overwritten.\n\nEdit {@link %s, %s} to change the state machine declaration.",
                 model.getSourceClassName(), model.getSourceClassName(), model.getSourceClassName(), model.getSourceClassName());
     }
@@ -251,6 +276,11 @@ final class StateMachineCreator {
     }
 
     private void generateSendMethods(Model model, JavaWriter javaWriter) throws IOException {
+        switch (model.getDispatchMode()) {
+            case CALLING_THREAD:
+
+                break;
+        }
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC, Modifier.SYNCHRONIZED), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
@@ -264,17 +294,30 @@ final class StateMachineCreator {
         javaWriter.endControlFlow();
         javaWriter.emitStatement("PayloadModifier.setSignalOnPayload(signal, payload)");
 
-        javaWriter.emitEmptyLine();
-        javaWriter.emitStatement(model.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
-        javaWriter.beginControlFlow("if (nextState != null)");
-        javaWriter.emitStatement("switchState(nextState)");
-        javaWriter.endControlFlow();
+        javaWriter.emitStatement("mSignalDispatcher.dispatch(signal, payload)");
         javaWriter.endMethod();
 
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), model.getSignalsEnumName(), "signal");
         javaWriter.emitStatement("send(signal, null)");
         javaWriter.endMethod();
+    }
+
+    void generateBlockingDispatchCallback(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.beginType("MachineCallback", "class", EnumSet.of(Modifier.PRIVATE),
+                null,
+                DispatchCallback.class.getSimpleName() + "<"+ model.getSignalsEnumName() +">");
+
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod("void", "dispatchBlocking", EnumSet.of(Modifier.PUBLIC),
+                model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+        javaWriter.emitStatement(model.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
+        javaWriter.beginControlFlow("if (nextState != null)");
+        javaWriter.emitStatement("switchState(nextState)");
+        javaWriter.endControlFlow();
+        javaWriter.endMethod();
+
+        javaWriter.endType();
     }
 
     private void generateSwitchStateMethod(Model model, JavaWriter javaWriter) throws IOException {
@@ -349,6 +392,24 @@ final class StateMachineCreator {
     private void generateInitMethod(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener");
+
+        javaWriter.emitStatement("mDispatchCallback = new MachineCallback()");
+
+        String dispatchConstructorCall;
+        switch (model.getDispatchMode()) {
+            case BACKGROUND_QUEUE:
+                dispatchConstructorCall = "BackgroundQueueDispatcher(mDispatchCallback)";
+                break;
+            case SHARED_BACKGROUND_QUEUE:
+                dispatchConstructorCall = "SharedBackgroundQueueDispatcher(mDispatchCallback, " + model.getDispatchQueueId() + ")";
+                break;
+            case CALLING_THREAD:
+                // Intentional fall-through
+            default:
+                dispatchConstructorCall = "CallingThreadDispatcher(mDispatchCallback)";
+
+        }
+        javaWriter.emitStatement("mSignalDispatcher = new " + dispatchConstructorCall);
         javaWriter.emitStatement("mCurrentState = startingState");
         javaWriter.emitStatement("mEventListener = eventListener != null ? eventListener : new NullEventListener()");
         javaWriter.emitStatement("mWaitingForInit = false");

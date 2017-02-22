@@ -3,6 +3,7 @@ package com.jayway.annostatemachine.processor;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.SignalRef;
 import com.jayway.annostatemachine.StateRef;
+import com.jayway.annostatemachine.annotations.StateMachine;
 import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
@@ -44,6 +45,9 @@ class Model {
     private String mTargetClassName;
     private String mTargetClassQualifiedName;
     private String mSourceClassName;
+
+    private StateMachine.DispatchMode mDispatchMode = StateMachine.DispatchMode.CALLING_THREAD;
+    private int mDispatchQueueId = StateMachine.ID_GLOBAL_SHARED_QUEUE;
 
     String getStatesEnumName() {
         return mStatesEnumName;
@@ -267,6 +271,11 @@ class Model {
         mStatesEnumName = element.getSimpleName().toString();
     }
 
+    void setDispatchMode(StateMachine.DispatchMode dispatchMode, int dispatchQueueId) {
+        mDispatchMode = dispatchMode;
+        mDispatchQueueId = dispatchQueueId;
+    }
+
     void aggregateConnectionsPerSignal() {
         aggregateLocalSignalTransitionsPerSignalPerState();
         aggregateGlobalSpiesPerSignal();
@@ -441,5 +450,13 @@ class Model {
 
     String getSourceClassName() {
         return mSourceClassName;
+    }
+
+    StateMachine.DispatchMode getDispatchMode() {
+        return mDispatchMode;
+    }
+
+    public int getDispatchQueueId() {
+        return mDispatchQueueId;
     }
 }
