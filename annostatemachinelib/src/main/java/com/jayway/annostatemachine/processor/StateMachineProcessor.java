@@ -22,10 +22,11 @@ import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
-// Notes
-// Add general signal handler that can act on multiple from states
-// Add a general signal handler that acts on all signals in one, several or all states with or without to state.
-
+/**
+ * Reads state machine declaration classes with the annotation {@link StateMachine} and generates
+ * the corresponding state machine implementation classes. The implementation classes are placed
+ * in a sub package of the declaration class' package. The sub package is named "generated".
+ */
 @SupportedAnnotationTypes("com.jayway.annostatemachine.annotations.StateMachine")
 @SupportedSourceVersion(SourceVersion.RELEASE_7)
 final public class StateMachineProcessor extends AbstractProcessor {

@@ -15,6 +15,9 @@ import javax.annotation.processing.Messager;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 
+/**
+ * The model that is used as input to the code generation component.
+ */
 class Model {
 
     private ArrayList<SignalRef> mSignals = new ArrayList<>();

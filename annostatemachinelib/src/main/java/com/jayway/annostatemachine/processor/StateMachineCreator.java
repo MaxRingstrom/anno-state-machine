@@ -28,6 +28,9 @@ import javax.lang.model.util.SimpleElementVisitor7;
 import javax.tools.Diagnostic;
 import javax.tools.JavaFileObject;
 
+/**
+ * Creates a java file with the state machine implementation.
+ */
 final class StateMachineCreator {
 
     /**
