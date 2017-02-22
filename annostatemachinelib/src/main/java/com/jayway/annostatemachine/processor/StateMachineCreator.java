@@ -129,53 +129,16 @@ final class StateMachineCreator {
 
         javaWriter.emitEmptyLine();
 
-        javaWriter.beginControlFlow("if (nextState == null)");
-        emitGlobalSpecificSignalConnectionHandler(model, javaWriter);
+        if (model.getGlobalSignalTransitionsPerSignal().size() > 0
+                || model.getGlobalAnySignalTransitions().size() > 0) {
+            javaWriter.beginControlFlow("if (nextState == null)");
 
-        emitGlobalAnySignalTransitionsBlock(model, javaWriter);
+            emitGlobalSpecificSignalConnectionHandler(model, javaWriter);
+            emitGlobalAnySignalTransitionsBlock(model, javaWriter);
 
-        javaWriter.endControlFlow();
-
-        javaWriter.emitEmptyLine();
-
-        javaWriter.emitStatement("return nextState");
-
-        javaWriter.endMethod();
-    }
-
-    private void generateSignalDispatcher(Model model, JavaWriter javaWriter) throws IOException {
-
-        javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(model.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE),
-                model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
-
-        javaWriter.emitStatement(model.getStatesEnumName() + " nextState = null");
-        javaWriter.emitStatement("mEventListener.onDispatchingSignal(mCurrentState, signal)");
-
-        javaWriter.emitEmptyLine();
-
-        javaWriter.beginControlFlow("switch (mCurrentState)");
-
-        for (StateRef state : model.getStates()) {
-            javaWriter.emitStatement("case %s: nextState = handleSignalIn%s(signal, payload); break",
-                    state.getName(), camelCase(state.getName()));
+            javaWriter.endControlFlow();
+            javaWriter.emitEmptyLine();
         }
-
-        javaWriter.endControlFlow();
-
-        emitGlobalSpecificSignalSpyHandler(model, javaWriter);
-        emitGlobalAnySignalSpyHandler(model, javaWriter);
-
-        javaWriter.emitEmptyLine();
-
-        javaWriter.beginControlFlow("if (nextState == null)");
-        emitGlobalSpecificSignalConnectionHandler(model, javaWriter);
-
-        emitGlobalAnySignalTransitionsBlock(model, javaWriter);
-
-        javaWriter.endControlFlow();
-
-        javaWriter.emitEmptyLine();
 
         javaWriter.emitStatement("return nextState");
 
@@ -288,16 +251,17 @@ final class StateMachineCreator {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
-        javaWriter.beginControlFlow("if (payload == null)");
-        javaWriter.emitStatement("payload = new SignalPayload()");
-        javaWriter.endControlFlow();
-        javaWriter.emitStatement("PayloadModifier.setSignalOnPayload(signal, payload)");
-        javaWriter.emitEmptyLine();
-
         javaWriter.beginControlFlow("if (mWaitingForInit)");
         javaWriter.emitStatement("throw new IllegalStateException(\"Missing call to init\")");
         javaWriter.endControlFlow();
 
+        javaWriter.emitEmptyLine();
+        javaWriter.beginControlFlow("if (payload == null)");
+        javaWriter.emitStatement("payload = new SignalPayload()");
+        javaWriter.endControlFlow();
+        javaWriter.emitStatement("PayloadModifier.setSignalOnPayload(signal, payload)");
+
+        javaWriter.emitEmptyLine();
         javaWriter.emitStatement(model.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
         javaWriter.beginControlFlow("if (nextState != null)");
         javaWriter.emitStatement("switchState(nextState)");
@@ -334,7 +298,6 @@ final class StateMachineCreator {
 
         HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = model.getLocalSignalTransitionsPerSignalForState(stateRef);
         if (connectionsPerSignal != null) {
-            javaWriter.emitEmptyLine();
             for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
                 javaWriter.beginControlFlow("if (signal.equals(" + model.getSignalsEnumName() + "." + connectionsForSignalEntry.getKey() + "))");
                 for (ConnectionRef connectionForSignal : connectionsForSignalEntry.getValue()) {
@@ -342,6 +305,7 @@ final class StateMachineCreator {
                 }
                 javaWriter.endControlFlow();
             }
+            javaWriter.emitEmptyLine();
         }
 
         if (anySignalConnectionsForState != null) {
@@ -358,17 +322,16 @@ final class StateMachineCreator {
     private void emitLocalAnySignalSpyHandler(StateRef stateRef, Model model, JavaWriter javaWriter) throws IOException {
         ArrayList<ConnectionRef> localAnySignalSpies = model.getLocalAnySignalSpiesForState(stateRef);
         if (localAnySignalSpies != null) {
-            javaWriter.emitEmptyLine();
             for (ConnectionRef connection : localAnySignalSpies) {
                 javaWriter.emitStatement("%s(payload)", connection.getName());
             }
+            javaWriter.emitEmptyLine();
         }
     }
 
     private void emitLocalSpecificSignalSpyHandler(StateRef stateRef, Model model, JavaWriter javaWriter) throws IOException {
         HashMap<String, ArrayList<ConnectionRef>> connectionsPerSignal = model.getLocalSignalSpiesPerSignalForState(stateRef);
         if (connectionsPerSignal != null) {
-            javaWriter.emitEmptyLine();
             for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
                 javaWriter.beginControlFlow("if (signal.equals(" + model.getSignalsEnumName() + "." + connectionsForSignalEntry.getKey() + "))");
                 for (ConnectionRef connectionForSignal : connectionsForSignalEntry.getValue()) {
@@ -376,6 +339,7 @@ final class StateMachineCreator {
                 }
                 javaWriter.endControlFlow();
             }
+            javaWriter.emitEmptyLine();
         }
     }
 
