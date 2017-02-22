@@ -35,8 +35,6 @@ class Model {
     private HashMap<String, ArrayList<ConnectionRef>> mGlobalSignalSpiesPerSignal = new HashMap<>();
     private HashMap<String, ArrayList<ConnectionRef>> mGlobalSignalTransitionsPerSignal = new HashMap<>();
 
-    private String mSignalsEnumClassQualifiedName;
-    private String mStatesEnumClassQualifiedName;
     private String mSignalsEnumName;
     private String mSourceQualifiedName;
     private String mTargetPackage;
@@ -44,29 +42,21 @@ class Model {
     private String mTargetClassQualifiedName;
     private String mSourceClassName;
 
-    public String getStatesEnumName() {
+    String getStatesEnumName() {
         return mStatesEnumName;
     }
 
-    public String getSignalsEnumQualifiedName() {
-        return mSignalsEnumClassQualifiedName;
-    }
-
-    public String getStatesEnumQualifiedName() {
-        return mStatesEnumClassQualifiedName;
-    }
-
-    public String getSignalsEnumName() {
+    String getSignalsEnumName() {
         return mSignalsEnumName;
     }
 
     private String mStatesEnumName;
 
-    public void add(SignalRef signal) {
+    void add(SignalRef signal) {
         mSignals.add(signal);
     }
 
-    public void add(ConnectionRef connection) {
+    void add(ConnectionRef connection) {
         boolean hasWildcardFrom = ConnectionRef.WILDCARD.equals(connection.getFrom());
         boolean hasWildcardTo = ConnectionRef.WILDCARD.equals(connection.getTo());
         boolean hasWildcardSignal = ConnectionRef.WILDCARD.equals(connection.getSignal());
@@ -168,11 +158,11 @@ class Model {
         mLocalSignalTransitions.put(connection.getFrom(), connectionsForFromState);
     }
 
-    public void add(StateRef state) {
+    void add(StateRef state) {
         mStates.add(state);
     }
 
-    public void describeContents(JavaWriter javaWriter) throws IOException {
+    void describeContents(JavaWriter javaWriter) throws IOException {
         javaWriter.emitSingleLineComment("--- States ---");
         for (StateRef stateRef : mStates) {
             javaWriter.emitSingleLineComment(" " + stateRef);
@@ -266,17 +256,15 @@ class Model {
         }
     }
 
-    public void setSignalsEnum(TypeElement element) {
-        mSignalsEnumClassQualifiedName = element.getQualifiedName().toString();
+    void setSignalsEnum(TypeElement element) {
         mSignalsEnumName = element.getSimpleName().toString();
     }
 
-    public void setStatesEnum(TypeElement element) {
-        mStatesEnumClassQualifiedName = element.getQualifiedName().toString();
+    void setStatesEnum(TypeElement element) {
         mStatesEnumName = element.getSimpleName().toString();
     }
 
-    public void aggregateConnectionsPerSignal() {
+    void aggregateConnectionsPerSignal() {
         aggregateLocalSignalTransitionsPerSignalPerState();
         aggregateGlobalSpiesPerSignal();
         aggregateLocalSpiesPerSignal();
@@ -351,23 +339,23 @@ class Model {
         }
     }
 
-    public ArrayList<ConnectionRef> getGlobalAnySignalTransitions() {
+    ArrayList<ConnectionRef> getGlobalAnySignalTransitions() {
         return mGlobalAnySignalTransitions;
     }
 
-    public HashMap<String, ArrayList<ConnectionRef>> getGlobalSignalTransitionsPerSignal() {
+    HashMap<String, ArrayList<ConnectionRef>> getGlobalSignalTransitionsPerSignal() {
         return mGlobalSignalTransitionsPerSignal;
     }
 
-    public ArrayList<ConnectionRef> getGlobalAnySignalSpies() {
+    ArrayList<ConnectionRef> getGlobalAnySignalSpies() {
         return mGlobalAnySignalSpies;
     }
 
-    public HashMap<String, ArrayList<ConnectionRef>> getGlobalSignalSpiesPerSignal() {
+    HashMap<String, ArrayList<ConnectionRef>> getGlobalSignalSpiesPerSignal() {
         return mGlobalSignalSpiesPerSignal;
     }
 
-    public HashMap<String, ArrayList<ConnectionRef>> getLocalSignalTransitions() {
+    HashMap<String, ArrayList<ConnectionRef>> getLocalSignalTransitions() {
         return mLocalSignalTransitions;
     }
 
@@ -392,23 +380,23 @@ class Model {
         }
     }
 
-    public ArrayList<StateRef> getStates() {
+    ArrayList<StateRef> getStates() {
         return mStates;
     }
 
-    public ArrayList<ConnectionRef> getAnySignalTransitionsForState(StateRef stateRef) {
+    ArrayList<ConnectionRef> getAnySignalTransitionsForState(StateRef stateRef) {
         return mLocalAnySignalTransitions.get(stateRef.getName());
     }
 
-    public HashMap<String, ArrayList<ConnectionRef>> getLocalSignalTransitionsPerSignalForState(StateRef stateRef) {
+    HashMap<String, ArrayList<ConnectionRef>> getLocalSignalTransitionsPerSignalForState(StateRef stateRef) {
         return mLocalSignalTransitionsPerSignalPerState.get(stateRef.getName());
     }
 
-    public ArrayList<ConnectionRef> getLocalAnySignalSpiesForState(StateRef stateRef) {
+    ArrayList<ConnectionRef> getLocalAnySignalSpiesForState(StateRef stateRef) {
         return mLocalAnySignalSpies.get(stateRef.getName());
     }
 
-    public HashMap<String, ArrayList<ConnectionRef>> getLocalSignalSpiesPerSignalForState(StateRef stateRef) {
+    HashMap<String, ArrayList<ConnectionRef>> getLocalSignalSpiesPerSignalForState(StateRef stateRef) {
         return mLocalSignalSpiesPerSignalPerState.get(stateRef.getName());
     }
 
@@ -418,41 +406,37 @@ class Model {
      *
      * @param sourceClassQualifiedName The qualified name of the state machine declaration class.
      */
-    public void setSource(String sourceClassQualifiedName, String sourceClassName) {
+    void setSource(String sourceClassQualifiedName, String sourceClassName) {
         mSourceQualifiedName = sourceClassQualifiedName;
         mSourceClassName = sourceClassName;
     }
 
     /**
      * Set the target class information. This is the generated state machine implementation class.
-     *
-     * @param targetPackage
-     * @param targetClassName
-     * @param targetClassQualifiedName
      */
-    public void setTarget(String targetPackage, String targetClassName, String targetClassQualifiedName) {
+    void setTarget(String targetPackage, String targetClassName, String targetClassQualifiedName) {
         mTargetPackage = targetPackage;
         mTargetClassName = targetClassName;
         mTargetClassQualifiedName = targetClassQualifiedName;
     }
 
-    public String getTargetClassQualifiedName() {
+    String getTargetClassQualifiedName() {
         return mTargetClassQualifiedName;
     }
 
-    public String getTargetPackage() {
+    String getTargetPackage() {
         return mTargetPackage;
     }
 
-    public String getSourceQualifiedName() {
+    String getSourceQualifiedName() {
         return mSourceQualifiedName;
     }
 
-    public String getTargetClassName() {
+    String getTargetClassName() {
         return mTargetClassName;
     }
 
-    public String getSourceClassName() {
+    String getSourceClassName() {
         return mSourceClassName;
     }
 }
