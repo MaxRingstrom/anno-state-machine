@@ -58,9 +58,10 @@ public class BackgroundQueueDispatcherTests {
         // The callback should not be called when sending the signal
         assertFalse(callbackCalled.get());
 
+        latch.await((long) (CONNECTION_BLOCKING_TIME * 1.1f), TimeUnit.MILLISECONDS);
+
         verify(mMockEventListener).onDispatchingSignal(eq(TestMachine.State.Init), eq(TestMachine.Signal.Start));
 
-        latch.await((long) (CONNECTION_BLOCKING_TIME * 1.1f), TimeUnit.MILLISECONDS);
         // The callback should be called when the signal has been handled
         assertTrue(callbackCalled.get());
 
