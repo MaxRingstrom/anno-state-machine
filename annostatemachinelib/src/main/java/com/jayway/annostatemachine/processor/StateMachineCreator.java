@@ -75,6 +75,7 @@ final class StateMachineCreator {
         javaWriter.emitField(DispatchCallback.class.getSimpleName()+"<" + model.getSignalsEnumName() + ">", "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "new SystemOutLogger()");
         javaWriter.emitField(UiThreadPoster.class.getSimpleName(), "mUiThreadPoster", EnumSet.of(Modifier.PRIVATE), "new NoOpUiThreadPoster()");
+        javaWriter.emitField(AtomicBoolean.class.getSimpleName(), "mIsShutdown", EnumSet.of(Modifier.PRIVATE), "new AtomicBoolean(false)");
     }
 
     void generatePassThroughConstructors(Element element, final Model model,
@@ -248,6 +249,7 @@ final class StateMachineCreator {
     private void generateShutdownMethod(JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "shutDown", EnumSet.of(Modifier.PUBLIC));
+        javaWriter.emitStatement("mIsShutdown.set(true)");
         javaWriter.emitStatement("mSignalDispatcher.shutDown()");
         javaWriter.endMethod();
     }
@@ -323,16 +325,16 @@ final class StateMachineCreator {
     }
 
     private void generateSendMethods(Model model, JavaWriter javaWriter) throws IOException {
-        switch (model.getDispatchMode()) {
-            case CALLING_THREAD:
-
-                break;
-        }
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC, Modifier.SYNCHRONIZED), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
         javaWriter.beginControlFlow("if (mWaitingForInit)");
         javaWriter.emitStatement("throw new IllegalStateException(\"Missing call to init\")");
+        javaWriter.endControlFlow();
+
+        javaWriter.beginControlFlow("if (mIsShutdown.get())");
+        javaWriter.emitStatement("mLogger.e(\"%s\", \"Send called after shut down\", new Exception(\"Ignoring signal \" + signal + \" - state machine has been shut down\"))", model.getTargetClassName());
+        javaWriter.emitStatement("return");
         javaWriter.endControlFlow();
 
         javaWriter.emitEmptyLine();
