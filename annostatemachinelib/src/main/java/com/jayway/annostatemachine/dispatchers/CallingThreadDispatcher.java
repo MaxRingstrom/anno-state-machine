@@ -22,4 +22,9 @@ public class CallingThreadDispatcher<SignalType extends Enum> extends SignalDisp
             getLogger().e(TAG, "Ignoring signal dispatch, callback is null");
         }
     }
+
+    @Override
+    public void shutDown() {
+        // No necessary when we don't have a worker thread.
+    }
 }

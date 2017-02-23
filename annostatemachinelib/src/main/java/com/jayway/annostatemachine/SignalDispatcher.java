@@ -22,4 +22,6 @@ public abstract class SignalDispatcher<SignalType extends Enum> {
     protected StateMachineLogger getLogger() {
         return mLogger;
     }
+
+    public abstract void shutDown();
 }

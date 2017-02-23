@@ -46,4 +46,10 @@ public class BackgroundQueueDispatcher<SignalType extends Enum> extends SignalDi
             }
         });
     }
+
+    @Override
+    public void shutDown() {
+        getLogger().d(TAG, "Shutting down executor");
+        mExecutor.shutdownNow();
+    }
 }

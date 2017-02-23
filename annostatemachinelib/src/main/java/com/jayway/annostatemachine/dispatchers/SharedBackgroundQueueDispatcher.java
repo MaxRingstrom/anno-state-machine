@@ -15,4 +15,9 @@ public class SharedBackgroundQueueDispatcher extends SignalDispatcher {
     public void dispatch(Enum signal, SignalPayload payload) {
 
     }
+
+    @Override
+    public void shutDown() {
+
+    }
 }

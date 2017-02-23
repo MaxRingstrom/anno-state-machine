@@ -10,25 +10,23 @@ import com.jayway.annostatemachine.dispatchertests.generated.TestMachineImpl;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 @RunWith(MockitoJUnitRunner.class)
 public class BackgroundQueueDispatcherTests {
 
-    public static final int CONNECTION_BLOCKING_TIME = 2000;
+    public static final int CONNECTION_BLOCKING_TIME = 200;
 
     @Mock
     private StateMachineEventListener mMockEventListener;
@@ -60,8 +58,8 @@ public class BackgroundQueueDispatcherTests {
 
         verify(mMockEventListener).onDispatchingSignal(eq(TestMachine.State.Init), eq(TestMachine.Signal.Start));
 
-        latch.await((long) (CONNECTION_BLOCKING_TIME*1.1f), TimeUnit.MILLISECONDS);
-        // The callback should be called when the signal has benn handled
+        latch.await((long) (CONNECTION_BLOCKING_TIME * 1.1f), TimeUnit.MILLISECONDS);
+        // The callback should be called when the signal has been handled
         assertTrue(callbackCalled.get());
 
         verify(mMockEventListener).onChangingState(eq(TestMachine.State.Init), eq(TestMachine.State.Started));
@@ -69,12 +67,14 @@ public class BackgroundQueueDispatcherTests {
 
     @Test
     /**
-     * TODO: mri - Not a good test. We need to check that the garbage collector recycles the thread pool executor when the state machine is no longer used. Such as when an Android activity finishes.
+     * Checks that the garbage collector recycles the thread pool executor when the state machine
+     * is no longer used. Such as when an Android activity finishes.
      */
-    public void testCallbackIgnoredWhenStateMachineNulled() throws InterruptedException {
+    public void testBackgroundExecutorShutDownWhenNoRefToStateMachine() throws InterruptedException {
 
-        final CountDownLatch latch = new CountDownLatch(1);
         final AtomicBoolean callbackCalled = new AtomicBoolean(false);
+
+        final AtomicInteger numOnstartedAgain = new AtomicInteger();
 
         TestMachine.Callback callback = new TestMachine.Callback() {
             @Override
@@ -83,7 +83,7 @@ public class BackgroundQueueDispatcherTests {
 
             @Override
             public void onStartingAgain() {
-                latch.countDown();
+                numOnstartedAgain.incrementAndGet();
                 callbackCalled.set(true);
             }
         };
@@ -92,35 +92,61 @@ public class BackgroundQueueDispatcherTests {
         machine.init(TestMachine.State.Init, mMockEventListener);
         machine.send(TestMachine.Signal.Start);
 
-        // Queue second signal. Since we null the machine this should automatically shut down the executor and thus not run the second callback.
-        machine.send(TestMachine.Signal.Start);
+        for (int i = 0; i < 10; i++) {
+            // Queue a lot of signals
+            machine.send(TestMachine.Signal.Start);
+        }
 
+        // Null the machine which should lead to 0 instances of the TestMachine class when
+        // garbage collection has run.
         machine = null;
-        System.gc();
 
-        // The callback should never be called
-        assertFalse(latch.await((long) (CONNECTION_BLOCKING_TIME*2.5f), TimeUnit.MILLISECONDS));
+        while (!TestMachine.FINALIZE_LATCH.await(100, TimeUnit.MILLISECONDS)) {
+            System.runFinalization();
+            System.gc();
+            System.out.println("Latch count: " + TestMachine.FINALIZE_LATCH.getCount());
+        }
+        System.out.println("Latch count: " + TestMachine.FINALIZE_LATCH.getCount());
 
-        // Something is fishy here. I want to test that the first signal is being handled and that the second one
-        // is not handled due to machine being set to null. However attempts to get this working has failed. Either
-        // no connection methods are called or all of them are.
-//        verify(mMockEventListener).onChangingState(eq(TestMachine.State.Init), eq(TestMachine.State.Started));
-        verify(mMockEventListener, never()).onChangingState(eq(TestMachine.State.Started), eq(TestMachine.State.StartedAgain));
+        // The latch is 0 which means that there are no more instances of the state machine.
+
+        // I would like the machine to shut down as soon as the machine is nulled, however there is
+        // no time in between task executions on the background thread executor to finish a garbage
+        // collection. This means that the tasks in the thread pool executor keeps a local variable
+        // of the MessageDispatcher which is in fact the state machine. They do so when running and
+        // releases it when they finish, but the next task starts just after. If a finalize and gc
+        // is run before retrieving the weak reference in BackgroundQueueDispatcher it works as I'd like.
+
+        // This solution will prevent the state machine from being leaked and also ensures that the
+        // executor gets garbage collected when no-one has a reference to the state machine.
+
+        // The executor can be stopped directly when explicitly told to.
+
     }
 
     @StateMachine(dispatchMode = StateMachine.DispatchMode.BACKGROUND_QUEUE)
     public static class TestMachine {
 
+        private static CountDownLatch FINALIZE_LATCH = new CountDownLatch(0);
+
         private final Callback mCallback;
 
         public TestMachine(Callback callback) {
+            FINALIZE_LATCH = new CountDownLatch((int) (FINALIZE_LATCH.getCount() + 1));
             mCallback = callback;
         }
 
-        @Signals public enum Signal {Start}
-        @States public enum State {Init, Started, StartedAgain}
+        @Signals
+        public enum Signal {
+            Start
+        }
 
-        @Connection(from = "Init", to="Started", signal="Start")
+        @States
+        public enum State {
+            Init, Started, StartedAgain
+        }
+
+        @Connection(from = "Init", to = "Started", signal = "Start")
         public boolean onStart(SignalPayload payload) {
             // Make the code take some time
             try {
@@ -132,7 +158,7 @@ public class BackgroundQueueDispatcherTests {
             return true;
         }
 
-        @Connection(from = "Started", to="StartedAgain", signal="Start")
+        @Connection(from = "Started", to = "*", signal = "Start")
         public boolean onStartWhenStarted(SignalPayload payload) {
             // Make the code take some time
             try {
@@ -148,6 +174,12 @@ public class BackgroundQueueDispatcherTests {
             void onStart();
 
             void onStartingAgain();
+        }
+
+        @Override
+        protected void finalize() throws Throwable {
+            super.finalize();
+            FINALIZE_LATCH.countDown();
         }
     }
 }
