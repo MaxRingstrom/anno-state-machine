@@ -225,6 +225,8 @@ final class StateMachineCreator {
                 generateSendMethods(model, javaWriter);
                 generateSwitchStateMethod(model, javaWriter);
 
+                generateShutdownMethod(javaWriter);
+
                 if (model.hasUiThreadConnections()) {
                     generateRunOnUiThreadMethod(model, writer);
                 }
@@ -241,6 +243,13 @@ final class StateMachineCreator {
             e.printStackTrace();
         }
 
+    }
+
+    private void generateShutdownMethod(JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod("void", "shutDown", EnumSet.of(Modifier.PUBLIC));
+        javaWriter.emitStatement("mSignalDispatcher.shutDown()");
+        javaWriter.endMethod();
     }
 
     private void generateClassJavaDoc(Model model, JavaWriter javaWriter) throws IOException {

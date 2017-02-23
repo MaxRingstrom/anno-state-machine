@@ -8,6 +8,8 @@ import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
 import com.jayway.annostatemachine.dispatchertests.generated.TestMachineImpl;
 
+import junit.framework.Assert;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -19,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static junit.framework.TestCase.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
@@ -72,10 +75,6 @@ public class BackgroundQueueDispatcherTests {
      */
     public void testBackgroundExecutorShutDownWhenNoRefToStateMachine() throws InterruptedException {
 
-        final AtomicBoolean callbackCalled = new AtomicBoolean(false);
-
-        final AtomicInteger numOnstartedAgain = new AtomicInteger();
-
         TestMachine.Callback callback = new TestMachine.Callback() {
             @Override
             public void onStart() {
@@ -83,8 +82,6 @@ public class BackgroundQueueDispatcherTests {
 
             @Override
             public void onStartingAgain() {
-                numOnstartedAgain.incrementAndGet();
-                callbackCalled.set(true);
             }
         };
 
@@ -122,6 +119,44 @@ public class BackgroundQueueDispatcherTests {
 
         // The executor can be stopped directly when explicitly told to.
 
+    }
+
+    @Test
+    public void testShutdownCancelsTasks() throws InterruptedException {
+        final int numExtraStartSignals = 200;
+        final AtomicInteger numCalls = new AtomicInteger();
+        TestMachine.Callback callback = new TestMachine.Callback() {
+            @Override
+            public void onStart() {
+            }
+
+            @Override
+            public void onStartingAgain() {
+                numCalls.incrementAndGet();
+            }
+        };
+
+        TestMachineImpl machine = new TestMachineImpl(callback);
+        machine.init(TestMachine.State.Init, mMockEventListener);
+        machine.send(TestMachine.Signal.Start);
+
+        for (int i = 0; i < numExtraStartSignals; i++) {
+            // Queue a lot of signals
+            machine.send(TestMachine.Signal.Start);
+        }
+
+        // Shut down the machine. Should lead to less than all tasks being run when the state machine
+        // has been garbage collected.
+        machine.shutDown();
+        machine = null;
+
+        while (!TestMachine.FINALIZE_LATCH.await(100, TimeUnit.MILLISECONDS)) {
+            System.runFinalization();
+            System.gc();
+            System.out.println("Latch count: " + TestMachine.FINALIZE_LATCH.getCount());
+        }
+        System.out.println("Latch count: " + TestMachine.FINALIZE_LATCH.getCount());
+        Assert.assertTrue(numCalls.get() < numExtraStartSignals);
     }
 
     @StateMachine(dispatchMode = StateMachine.DispatchMode.BACKGROUND_QUEUE)
