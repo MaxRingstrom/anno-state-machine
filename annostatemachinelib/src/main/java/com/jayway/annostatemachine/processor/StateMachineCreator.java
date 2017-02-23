@@ -3,15 +3,19 @@ package com.jayway.annostatemachine.processor;
 
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.DispatchCallback;
+import com.jayway.annostatemachine.NoOpUiThreadPoster;
 import com.jayway.annostatemachine.NullEventListener;
 import com.jayway.annostatemachine.PayloadModifier;
 import com.jayway.annostatemachine.SignalDispatcher;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.StateRef;
+import com.jayway.annostatemachine.UiThreadPoster;
 import com.jayway.annostatemachine.dispatchers.BackgroundQueueDispatcher;
 import com.jayway.annostatemachine.dispatchers.CallingThreadDispatcher;
 import com.jayway.annostatemachine.dispatchers.SharedBackgroundQueueDispatcher;
+import com.jayway.annostatemachine.utils.StateMachineLogger;
+import com.jayway.annostatemachine.utils.SystemOutLogger;
 import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
@@ -21,6 +25,9 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.annotation.processing.Messager;
 import javax.annotation.processing.ProcessingEnvironment;
@@ -52,8 +59,7 @@ final class StateMachineCreator {
         javaWriter.emitEmptyLine();
 
         for (ConnectionRef connection : transitions) {
-            javaWriter.emitStatement("if (%s(payload)) return %s",
-                    connection.getName(), model.getStatesEnumName() + "." + connection.getTo());
+            emitTransitionCall(model, connection, javaWriter);
         }
     }
 
@@ -67,6 +73,8 @@ final class StateMachineCreator {
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(SignalDispatcher.class.getSimpleName(), "mSignalDispatcher", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(DispatchCallback.class.getSimpleName()+"<" + model.getSignalsEnumName() + ">", "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
+        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "new SystemOutLogger()");
+        javaWriter.emitField(UiThreadPoster.class.getSimpleName(), "mUiThreadPoster", EnumSet.of(Modifier.PRIVATE), "new NoOpUiThreadPoster()");
     }
 
     void generatePassThroughConstructors(Element element, final Model model,
@@ -118,7 +126,7 @@ final class StateMachineCreator {
 
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(model.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE),
-                model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+                model.getSignalsEnumName(), "signal", "final SignalPayload", "payload");
 
         javaWriter.emitStatement(model.getStatesEnumName() + " nextState = null");
         javaWriter.emitStatement("mEventListener.onDispatchingSignal(mCurrentState, signal)");
@@ -173,7 +181,14 @@ final class StateMachineCreator {
                         StateMachineEventListener.class.getCanonicalName(),
                         PayloadModifier.class.getCanonicalName(),
                         SignalDispatcher.class.getCanonicalName(),
-                        DispatchCallback.class.getCanonicalName());
+                        DispatchCallback.class.getCanonicalName(),
+                        StateMachineLogger.class.getCanonicalName(),
+                        SystemOutLogger.class.getCanonicalName(),
+                        NoOpUiThreadPoster.class.getCanonicalName(),
+                        UiThreadPoster.class.getCanonicalName(),
+                        Callable.class.getCanonicalName(),
+                        CountDownLatch.class.getCanonicalName(),
+                        AtomicBoolean.class.getCanonicalName());
 
                 switch (model.getDispatchMode()) {
                     case BACKGROUND_QUEUE:
@@ -188,7 +203,6 @@ final class StateMachineCreator {
                         javaWriter.emitImports(CallingThreadDispatcher.class.getCanonicalName());
                 }
 
-                javaWriter.emitStaticImports(model.getSourceQualifiedName() + ".*");
                 javaWriter.emitEmptyLine();
 
                 generateClassJavaDoc(model, javaWriter);
@@ -201,7 +215,7 @@ final class StateMachineCreator {
 
                 generatePassThroughConstructors(stateMachineDeclarationElement, model, processingEnv.getMessager(), javaWriter);
 
-                generateInitMethod(model, javaWriter);
+                generateInitMethods(model, javaWriter);
 
                 generateSignalDispatcher(model, javaWriter);
                 generateBlockingDispatchCallback(model, javaWriter);
@@ -210,6 +224,10 @@ final class StateMachineCreator {
 
                 generateSendMethods(model, javaWriter);
                 generateSwitchStateMethod(model, javaWriter);
+
+                if (model.hasUiThreadConnections()) {
+                    generateRunOnUiThreadMethod(model, writer);
+                }
 
                 // End class
                 javaWriter.emitEmptyLine();
@@ -241,7 +259,7 @@ final class StateMachineCreator {
         for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : globalSpecificSignalTransitionsPerSignal.entrySet()) {
             javaWriter.beginControlFlow("if (signal.equals(" + model.getSignalsEnumName() + "." + connectionsForSignal.getKey() + "))");
             for (ConnectionRef connection : connectionsForSignal.getValue()) {
-                javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), model.getStatesEnumName() + "." + connection.getTo());
+                emitTransitionCall(model, connection, javaWriter);
             }
             javaWriter.endControlFlow();
         }
@@ -255,7 +273,7 @@ final class StateMachineCreator {
         javaWriter.emitEmptyLine();
 
         for (ConnectionRef connection : globalAnySignalSpies) {
-            javaWriter.emitStatement("%s(payload)", connection.getName());
+            emitSpyCall(connection, javaWriter);
         }
     }
 
@@ -269,9 +287,29 @@ final class StateMachineCreator {
         for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignal : globalSignalSpiesPerSignal.entrySet()) {
             javaWriter.beginControlFlow("if (signal.equals(" + model.getSignalsEnumName() + "." + connectionsForSignal.getKey() + "))");
             for (ConnectionRef connection : connectionsForSignal.getValue()) {
-                javaWriter.emitStatement("%s(payload)", connection.getName());
+                emitSpyCall(connection, javaWriter);
             }
             javaWriter.endControlFlow();
+        }
+    }
+
+    private void emitSpyCall(ConnectionRef connection, JavaWriter javaWriter) throws IOException {
+        if (connection.getRunOnUiThread()) {
+            javaWriter.emitStatement("callConnectionOnUiThread(new Callable<Boolean>() {" +
+                    " public Boolean call() throws Exception { return %s(payload); }})", connection.getName());
+        } else {
+            javaWriter.emitStatement("%s(payload)", connection.getName());
+        }
+    }
+
+    private void emitTransitionCall(Model model, ConnectionRef connection, JavaWriter javaWriter) throws IOException {
+        if (connection.getRunOnUiThread()) {
+            javaWriter.beginControlFlow("if (callConnectionOnUiThread(new Callable<Boolean>() { public Boolean call() throws Exception {" +
+                    " return " + connection.getName() + "(payload); }}))");
+            javaWriter.emitStatement("return " + model.getStatesEnumName() + ".%s", connection.getTo());
+            javaWriter.endControlFlow();
+        } else {
+            javaWriter.emitStatement("if(%s(payload)) return %s.%s", connection.getName(), model.getStatesEnumName(),connection.getTo());
         }
     }
 
@@ -311,9 +349,13 @@ final class StateMachineCreator {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "dispatchBlocking", EnumSet.of(Modifier.PUBLIC),
                 model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+        javaWriter.beginControlFlow("try");
         javaWriter.emitStatement(model.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
         javaWriter.beginControlFlow("if (nextState != null)");
         javaWriter.emitStatement("switchState(nextState)");
+        javaWriter.endControlFlow();
+        javaWriter.nextControlFlow("catch (Throwable t)");
+        javaWriter.emitStatement("mLogger.e(\"%s\", \"Error when dispatching signal\", t)", model.getTargetClassName());
         javaWriter.endControlFlow();
         javaWriter.endMethod();
 
@@ -337,7 +379,7 @@ final class StateMachineCreator {
     private void generateSignalHandler(StateRef stateRef, Model model, JavaWriter javaWriter) throws IOException {
         ArrayList<ConnectionRef> anySignalConnectionsForState = model.getAnySignalTransitionsForState(stateRef);
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(model.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+        javaWriter.beginMethod(model.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), model.getSignalsEnumName(), "signal", "final SignalPayload", "payload");
 
         emitLocalSpecificSignalSpyHandler(stateRef, model, javaWriter);
         emitLocalAnySignalSpyHandler(stateRef, model, javaWriter);
@@ -347,7 +389,7 @@ final class StateMachineCreator {
             for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
                 javaWriter.beginControlFlow("if (signal.equals(" + model.getSignalsEnumName() + "." + connectionsForSignalEntry.getKey() + "))");
                 for (ConnectionRef connectionForSignal : connectionsForSignalEntry.getValue()) {
-                    javaWriter.emitStatement("if (%s(payload)) return %s", connectionForSignal.getName(), model.getStatesEnumName() + "." + connectionForSignal.getTo());
+                    emitTransitionCall(model, connectionForSignal, javaWriter);
                 }
                 javaWriter.endControlFlow();
             }
@@ -357,7 +399,7 @@ final class StateMachineCreator {
         if (anySignalConnectionsForState != null) {
             javaWriter.emitEmptyLine();
             for (ConnectionRef connection : anySignalConnectionsForState) {
-                javaWriter.emitStatement("if (%s(payload)) return %s", connection.getName(), model.getStatesEnumName() + "." + connection.getTo());
+                emitTransitionCall(model, connection, javaWriter);
             }
         }
 
@@ -369,7 +411,7 @@ final class StateMachineCreator {
         ArrayList<ConnectionRef> localAnySignalSpies = model.getLocalAnySignalSpiesForState(stateRef);
         if (localAnySignalSpies != null) {
             for (ConnectionRef connection : localAnySignalSpies) {
-                javaWriter.emitStatement("%s(payload)", connection.getName());
+                emitSpyCall(connection, javaWriter);
             }
             javaWriter.emitEmptyLine();
         }
@@ -381,7 +423,7 @@ final class StateMachineCreator {
             for (Map.Entry<String, ArrayList<ConnectionRef>> connectionsForSignalEntry : connectionsPerSignal.entrySet()) {
                 javaWriter.beginControlFlow("if (signal.equals(" + model.getSignalsEnumName() + "." + connectionsForSignalEntry.getKey() + "))");
                 for (ConnectionRef connectionForSignal : connectionsForSignalEntry.getValue()) {
-                    javaWriter.emitStatement("%s(payload)", connectionForSignal.getName());
+                    emitSpyCall(connectionForSignal, javaWriter);
                 }
                 javaWriter.endControlFlow();
             }
@@ -389,24 +431,25 @@ final class StateMachineCreator {
         }
     }
 
-    private void generateInitMethod(Model model, JavaWriter javaWriter) throws IOException {
+    private void generateInitMethods(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener");
+        javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener", UiThreadPoster.class.getSimpleName(), "uiThreadPoster");
 
+        javaWriter.emitStatement("mUiThreadPoster = uiThreadPoster != null ? uiThreadPoster : new NoOpUiThreadPoster()");
         javaWriter.emitStatement("mDispatchCallback = new MachineCallback()");
 
         String dispatchConstructorCall;
         switch (model.getDispatchMode()) {
             case BACKGROUND_QUEUE:
-                dispatchConstructorCall = "BackgroundQueueDispatcher(mDispatchCallback)";
+                dispatchConstructorCall = "BackgroundQueueDispatcher(mDispatchCallback, mLogger)";
                 break;
             case SHARED_BACKGROUND_QUEUE:
-                dispatchConstructorCall = "SharedBackgroundQueueDispatcher(mDispatchCallback, " + model.getDispatchQueueId() + ")";
+                dispatchConstructorCall = "SharedBackgroundQueueDispatcher(mDispatchCallback, " + model.getDispatchQueueId() + ", mLogger)";
                 break;
             case CALLING_THREAD:
                 // Intentional fall-through
             default:
-                dispatchConstructorCall = "CallingThreadDispatcher(mDispatchCallback)";
+                dispatchConstructorCall = "CallingThreadDispatcher(mDispatchCallback, mLogger)";
 
         }
         javaWriter.emitStatement("mSignalDispatcher = new " + dispatchConstructorCall);
@@ -414,6 +457,46 @@ final class StateMachineCreator {
         javaWriter.emitStatement("mEventListener = eventListener != null ? eventListener : new NullEventListener()");
         javaWriter.emitStatement("mWaitingForInit = false");
         javaWriter.endMethod();
+
+        // If the state machine has at least one connection that wants the connection method to
+        // be called on the ui thread, we force the user to specify a UiThreadPoster
+        if (!model.hasUiThreadConnections()) {
+            javaWriter.emitEmptyLine();
+            javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener");
+            javaWriter.emitStatement("init(startingState, eventListener, null)");
+            javaWriter.endMethod();
+
+            javaWriter.emitEmptyLine();
+            javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState");
+            javaWriter.emitStatement("init(startingState, null, null)");
+            javaWriter.endMethod();
+        }
+
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState", UiThreadPoster.class.getSimpleName(), "uiThreadPoster");
+        javaWriter.emitStatement("init(startingState, null, uiThreadPoster)");
+        javaWriter.endMethod();
+    }
+
+    private void generateRunOnUiThreadMethod(Model model, Writer writer) throws IOException {
+        writer.append("  private boolean callConnectionOnUiThread(final Callable<Boolean> callable) {\n" +
+                        "    final CountDownLatch latch = new CountDownLatch(1);\n" +
+                        "    final AtomicBoolean guardSatisfied = new AtomicBoolean();\n" +
+                        "    mUiThreadPoster.runOnUiThread(new Runnable() { public void run() {;\n" +
+                        "      try {\n" +
+                        "        guardSatisfied.set(callable.call());\n" +
+                        "      } catch (Throwable t) {\n" +
+                        "        mLogger.e(\"" + model.getTargetClassName() + "\", \"Error when running connection method\", t);\n" +
+                        "      }\n" +
+                        "      latch.countDown();\n" +
+                        "    }});\n" +
+                        "    try {\n" +
+                        "      latch.await();\n" +
+                        "    } catch (InterruptedException e) {\n"+
+                        "      mLogger.e(\"" + model.getTargetClassName() + "\", \"Thread interrupted when running connection method\", e);\n" +
+                        "    }\n"+
+                        "    return guardSatisfied.get();\n" +
+                        "  }");
     }
 
 }

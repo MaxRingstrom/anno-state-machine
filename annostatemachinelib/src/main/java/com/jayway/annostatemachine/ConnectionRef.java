@@ -24,16 +24,22 @@ public class ConnectionRef {
     private final String mFrom;
     private final String mTo;
     private final String mSignal;
+    private final boolean mRunOnUiThread;
 
-    public ConnectionRef(String name, String from, String to, String signal) {
+    public ConnectionRef(String name, String from, String to, String signal, boolean runOnUiThread) {
         mName = name;
         mFrom = from;
         mTo = to;
         mSignal = signal;
+        mRunOnUiThread = runOnUiThread;
     }
 
     @Override
     public String toString() {
         return mName + ": " + mFrom + " --" + mSignal + "--> " + mTo;
+    }
+
+    public boolean getRunOnUiThread() {
+        return mRunOnUiThread;
     }
 }

@@ -9,6 +9,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.jayway.annostatemachine.android.utils.AndroidUiThreadPoster;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
@@ -41,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
             public void onChangingState(Object o, Object o1) {
                 Log.d(TAG, "State switch from [" + o + "] to [" + o1 + "]");
             }
-        });
+        }, new AndroidUiThreadPoster(this));
 
         connectCheckBox(stateMachine);
 
@@ -62,7 +63,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    @StateMachine
+    @StateMachine(dispatchMode = StateMachine.DispatchMode.BACKGROUND_QUEUE)
     public abstract static class MainViewStateMachine {
 
         private final View mLoadingView;
@@ -71,12 +72,14 @@ public class MainActivity extends AppCompatActivity {
         private final View mCheckBox;
 
         public static final String KEY_CHECKBOX_CHECKED = "checkbox_checked";
+        private final MainActivity mActivity;
 
         public MainViewStateMachine(MainActivity activity) {
             mLoadingView = activity.findViewById(R.id.loadingContent);
             mText = (TextView) activity.findViewById(R.id.text);
             mNextButton = activity.findViewById(R.id.nextButton);
             mCheckBox = activity.findViewById(R.id.checkbox);
+            mActivity = activity;
         }
 
         @States
@@ -89,23 +92,21 @@ public class MainActivity extends AppCompatActivity {
             Start, ContentLoaded, CheckBoxCheckStateChanged
         }
 
-        @Connection(from = "Init", to = "LoadingContent", signal = "Start")
+        @Connection(from = "Init", to = "LoadingContent", signal = "Start", runOnUiThread = true)
         public boolean startLoadingContent(SignalPayload payload) {
             mLoadingView.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.INVISIBLE);
-
             // We do not have a guard on this connection so we always return true
             return true;
         }
 
-        @Connection(from = "LoadingContent", to = "UpAndRunning", signal = "ContentLoaded")
+        @Connection(from = "LoadingContent", to = "UpAndRunning", signal = "ContentLoaded", runOnUiThread = true)
         public boolean onContentLoaded(SignalPayload payload) {
             mLoadingView.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.VISIBLE);
             mText.setText("Welcome! - content has been loaded");
-            mText.setVisibility(View.VISIBLE);
             return true;
         }
 
@@ -116,7 +117,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Safe check from states
-        @Connection(from = "UpAndRunning", to = "Done", signal = "CheckBoxCheckStateChanged")
+        @Connection(from = "UpAndRunning", to = "Done", signal = "CheckBoxCheckStateChanged", runOnUiThread = true)
         public boolean onUserReadyToContinue(SignalPayload payload) {
             if (!payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is checked
@@ -126,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "Done", to = "UpAndRunning", signal = "CheckBoxCheckStateChanged")
+        @Connection(from = "Done", to = "UpAndRunning", signal = "CheckBoxCheckStateChanged", runOnUiThread = true)
         public boolean onUserNoLongerReadyToContinue(SignalPayload payload) {
             if (payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is unchecked
