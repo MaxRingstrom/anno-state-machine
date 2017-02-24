@@ -20,6 +20,7 @@ import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -72,10 +73,11 @@ final class StateMachineCreator {
         javaWriter.emitField("boolean", "mWaitingForInit", EnumSet.of(Modifier.PRIVATE), "true");
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(SignalDispatcher.class.getSimpleName(), "mSignalDispatcher", EnumSet.of(Modifier.PRIVATE));
-        javaWriter.emitField(DispatchCallback.class.getSimpleName()+"<" + model.getSignalsEnumName() + ">", "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
+        javaWriter.emitField(DispatchCallback.class.getSimpleName(), "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "new SystemOutLogger()");
         javaWriter.emitField(UiThreadPoster.class.getSimpleName(), "mUiThreadPoster", EnumSet.of(Modifier.PRIVATE), "new NoOpUiThreadPoster()");
         javaWriter.emitField(AtomicBoolean.class.getSimpleName(), "mIsShutdown", EnumSet.of(Modifier.PRIVATE), "new AtomicBoolean(false)");
+        javaWriter.emitField("int", "mSharedId");
     }
 
     void generatePassThroughConstructors(Element element, final Model model,
@@ -127,7 +129,7 @@ final class StateMachineCreator {
 
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod(model.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE),
-                model.getSignalsEnumName(), "signal", "final SignalPayload", "payload");
+                "Enum", "signal", "final SignalPayload", "payload");
 
         javaWriter.emitStatement(model.getStatesEnumName() + " nextState = null");
         javaWriter.emitStatement("mEventListener.onDispatchingSignal(mCurrentState, signal)");
@@ -189,7 +191,8 @@ final class StateMachineCreator {
                         UiThreadPoster.class.getCanonicalName(),
                         Callable.class.getCanonicalName(),
                         CountDownLatch.class.getCanonicalName(),
-                        AtomicBoolean.class.getCanonicalName());
+                        AtomicBoolean.class.getCanonicalName(),
+                        WeakReference.class.getCanonicalName());
 
                 switch (model.getDispatchMode()) {
                     case BACKGROUND_QUEUE:
@@ -353,17 +356,36 @@ final class StateMachineCreator {
     }
 
     void generateBlockingDispatchCallback(Model model, JavaWriter javaWriter) throws IOException {
-        javaWriter.beginType("MachineCallback", "class", EnumSet.of(Modifier.PRIVATE),
+
+        javaWriter.beginType("MachineCallback", "class", EnumSet.of(Modifier.PRIVATE, Modifier.STATIC),
                 null,
-                DispatchCallback.class.getSimpleName() + "<"+ model.getSignalsEnumName() +">");
+                DispatchCallback.class.getSimpleName());
+
+        javaWriter.emitEmptyLine();
+        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE, Modifier.FINAL));
+        javaWriter.emitField("WeakReference<" + model.getTargetClassName() + ">", "mStateMachineRef", EnumSet.of(Modifier.PRIVATE, Modifier.FINAL));
+
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod(null, "MachineCallback", EnumSet.of(Modifier.PUBLIC), model.getTargetClassName(), "machine", StateMachineLogger.class.getSimpleName(), "logger");
+        javaWriter.emitStatement("mStateMachineRef = new WeakReference<>(machine)");
+        javaWriter.emitStatement("mLogger = logger");
+        javaWriter.endMethod();
 
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "dispatchBlocking", EnumSet.of(Modifier.PUBLIC),
-                model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
+                "Enum", "signal", "SignalPayload", "payload");
         javaWriter.beginControlFlow("try");
-        javaWriter.emitStatement(model.getStatesEnumName() + " nextState = dispatchSignal(signal, payload)");
+
+        javaWriter.emitStatement(model.getTargetClassName() + " machine = mStateMachineRef.get()");
+        javaWriter.beginControlFlow("if (machine == null)");
+        javaWriter.emitStatement("mLogger.w(\"" + model.getTargetClassName() + "\", \"State machine is garbage collected - not calling dispatch on \" + signal);");
+        javaWriter.emitStatement("return");
+        javaWriter.endControlFlow();
+
+        javaWriter.emitEmptyLine();
+        javaWriter.emitStatement(model.getStatesEnumName() + " nextState = machine.dispatchSignal(signal, payload)");
         javaWriter.beginControlFlow("if (nextState != null)");
-        javaWriter.emitStatement("switchState(nextState)");
+        javaWriter.emitStatement("machine.switchState(nextState)");
         javaWriter.endControlFlow();
         javaWriter.nextControlFlow("catch (Throwable t)");
         javaWriter.emitStatement("mLogger.e(\"%s\", \"Error when dispatching signal\", t)", model.getTargetClassName());
@@ -390,7 +412,7 @@ final class StateMachineCreator {
     private void generateSignalHandler(StateRef stateRef, Model model, JavaWriter javaWriter) throws IOException {
         ArrayList<ConnectionRef> anySignalConnectionsForState = model.getAnySignalTransitionsForState(stateRef);
         javaWriter.emitEmptyLine();
-        javaWriter.beginMethod(model.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), model.getSignalsEnumName(), "signal", "final SignalPayload", "payload");
+        javaWriter.beginMethod(model.getStatesEnumName(), "handleSignalIn" + camelCase(stateRef.getName()), EnumSet.of(Modifier.PRIVATE), "Enum", "signal", "final SignalPayload", "payload");
 
         emitLocalSpecificSignalSpyHandler(stateRef, model, javaWriter);
         emitLocalAnySignalSpyHandler(stateRef, model, javaWriter);
@@ -447,7 +469,8 @@ final class StateMachineCreator {
         javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener", UiThreadPoster.class.getSimpleName(), "uiThreadPoster");
 
         javaWriter.emitStatement("mUiThreadPoster = uiThreadPoster != null ? uiThreadPoster : new NoOpUiThreadPoster()");
-        javaWriter.emitStatement("mDispatchCallback = new MachineCallback()");
+        javaWriter.emitStatement("mDispatchCallback = new MachineCallback(this, mLogger)");
+        javaWriter.emitStatement("mSharedId = " + model.getDispatchQueueId());
 
         String dispatchConstructorCall;
         switch (model.getDispatchMode()) {
@@ -455,7 +478,7 @@ final class StateMachineCreator {
                 dispatchConstructorCall = "BackgroundQueueDispatcher(mDispatchCallback, mLogger)";
                 break;
             case SHARED_BACKGROUND_QUEUE:
-                dispatchConstructorCall = "SharedBackgroundQueueDispatcher(mDispatchCallback, " + model.getDispatchQueueId() + ", mLogger)";
+                dispatchConstructorCall = "SharedBackgroundQueueDispatcher(mDispatchCallback, " + model.getDispatchQueueId() + ", mLogger, mSharedId)";
                 break;
             case CALLING_THREAD:
                 // Intentional fall-through

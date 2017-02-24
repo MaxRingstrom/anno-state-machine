@@ -4,19 +4,23 @@ import com.jayway.annostatemachine.utils.StateMachineLogger;
 
 import java.lang.ref.WeakReference;
 
-public abstract class SignalDispatcher<SignalType extends Enum> {
-    private final WeakReference<DispatchCallback<SignalType>> mStateMachineRef;
+public abstract class SignalDispatcher {
+    private final WeakReference<DispatchCallback> mStateMachineRef;
     private final StateMachineLogger mLogger;
 
-    public SignalDispatcher(DispatchCallback<SignalType> dispatchCallback, StateMachineLogger logger) {
+    public SignalDispatcher(DispatchCallback dispatchCallback, StateMachineLogger logger) {
         mStateMachineRef = new WeakReference<>(dispatchCallback);
         mLogger = logger;
     }
 
-    public abstract void dispatch(SignalType signal, SignalPayload<SignalType> payload);
+    public abstract void dispatch(Enum signal, SignalPayload<Enum> payload);
 
-    public DispatchCallback<SignalType> getCallback() {
+    protected DispatchCallback getCallback() {
         return mStateMachineRef.get();
+    }
+
+    protected WeakReference<DispatchCallback> getCallbackRef() {
+        return mStateMachineRef;
     }
 
     protected StateMachineLogger getLogger() {

@@ -61,7 +61,6 @@ public class BackgroundQueueDispatcherTests {
         latch.await((long) (CONNECTION_BLOCKING_TIME * 1.1f), TimeUnit.MILLISECONDS);
 
         verify(mMockEventListener).onDispatchingSignal(eq(TestMachine.State.Init), eq(TestMachine.Signal.Start));
-
         // The callback should be called when the signal has been handled
         assertTrue(callbackCalled.get());
 
@@ -78,6 +77,7 @@ public class BackgroundQueueDispatcherTests {
         TestMachine.Callback callback = new TestMachine.Callback() {
             @Override
             public void onStart() {
+
             }
 
             @Override
@@ -101,9 +101,9 @@ public class BackgroundQueueDispatcherTests {
         while (!TestMachine.FINALIZE_LATCH.await(100, TimeUnit.MILLISECONDS)) {
             System.runFinalization();
             System.gc();
-            System.out.println("Latch count: " + TestMachine.FINALIZE_LATCH.getCount());
+            System.out.println("TestMachine instance count: " + TestMachine.FINALIZE_LATCH.getCount());
         }
-        System.out.println("Latch count: " + TestMachine.FINALIZE_LATCH.getCount());
+        System.out.println("TestMachine instance count: " + TestMachine.FINALIZE_LATCH.getCount());
 
         // The latch is 0 which means that there are no more instances of the state machine.
 

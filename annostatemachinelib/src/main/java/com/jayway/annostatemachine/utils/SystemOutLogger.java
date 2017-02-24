@@ -9,6 +9,11 @@ public class SystemOutLogger implements StateMachineLogger {
     }
 
     @Override
+    public void w(String tag, String msg) {
+        System.out.println("w " + tag + ": " + msg);
+    }
+
+    @Override
     public void e(String tag, String msg) {
         System.out.println("e " + tag + ": " + msg);
     }

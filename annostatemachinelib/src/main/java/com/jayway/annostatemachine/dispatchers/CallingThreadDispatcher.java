@@ -5,17 +5,17 @@ import com.jayway.annostatemachine.SignalDispatcher;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.utils.StateMachineLogger;
 
-public class CallingThreadDispatcher<SignalType extends Enum> extends SignalDispatcher<SignalType> {
+public class CallingThreadDispatcher extends SignalDispatcher {
 
     private static final String TAG = CallingThreadDispatcher.class.getSimpleName();
 
-    public CallingThreadDispatcher(DispatchCallback<SignalType> implementation, StateMachineLogger logger) {
+    public CallingThreadDispatcher(DispatchCallback implementation, StateMachineLogger logger) {
         super(implementation, logger);
     }
 
     @Override
-    public void dispatch(SignalType signal, SignalPayload<SignalType> payload) {
-        DispatchCallback<SignalType> callback = getCallback();
+    public void dispatch(Enum signal, SignalPayload payload) {
+        DispatchCallback callback = getCallback();
         if (callback != null) {
             callback.dispatchBlocking(signal, payload);
         } else {
