@@ -9,17 +9,16 @@ public class CallingThreadDispatcher extends SignalDispatcher {
 
     private static final String TAG = CallingThreadDispatcher.class.getSimpleName();
 
-    public CallingThreadDispatcher(DispatchCallback implementation, StateMachineLogger logger) {
-        super(implementation, logger);
+    public CallingThreadDispatcher() {
+        super();
     }
 
     @Override
-    public void dispatch(Enum signal, SignalPayload payload) {
-        DispatchCallback callback = getCallback();
+    public void dispatch(Enum signal, SignalPayload payload, DispatchCallback callback, StateMachineLogger logger) {
         if (callback != null) {
             callback.dispatchBlocking(signal, payload);
         } else {
-            getLogger().e(TAG, "Ignoring signal dispatch, callback is null");
+            logger.e(TAG, "Ignoring signal dispatch, callback is null");
         }
     }
 

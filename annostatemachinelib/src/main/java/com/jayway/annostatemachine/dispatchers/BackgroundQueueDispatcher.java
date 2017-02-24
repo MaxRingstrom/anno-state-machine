@@ -17,18 +17,14 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
     private final ScheduledExecutorService mExecutor;
     private AtomicBoolean mIsShutDown = new AtomicBoolean();
 
-    public BackgroundQueueDispatcher(DispatchCallback dispatchCallback, StateMachineLogger logger) {
-        super(dispatchCallback, logger);
+    public BackgroundQueueDispatcher() {
+        super();
         mExecutor = Executors.newSingleThreadScheduledExecutor();
     }
 
-    @Override
-    public void dispatch(final Enum signal, final SignalPayload payload) {
-        dispatch(signal, payload, getCallbackRef());
-    }
-
-    public void dispatch(final Enum signal, final SignalPayload payload, final WeakReference<DispatchCallback> callbackRef) {
-        mExecutor.submit(new DispatchRunnable(callbackRef, new WeakReference<>(mExecutor), signal, payload, getLogger()));
+    public void dispatch(Enum signal, SignalPayload payload, DispatchCallback callback, StateMachineLogger logger) {
+        mExecutor.submit(new DispatchRunnable(new WeakReference<>(callback),
+                new WeakReference<>(mExecutor), signal, payload, logger));
     }
 
     private static class DispatchRunnable implements Runnable {
@@ -40,9 +36,10 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
         private final SignalPayload mPayLoad;
         private final StateMachineLogger mLogger;
 
-        public DispatchRunnable(WeakReference<DispatchCallback> callbackRef,
+        DispatchRunnable(WeakReference<DispatchCallback> callbackRef,
                                 WeakReference<ScheduledExecutorService> executorRef,
-                                Enum signal, SignalPayload payload, StateMachineLogger logger) {
+                                Enum signal, SignalPayload payload,
+                                StateMachineLogger logger) {
             mCallbackRef = callbackRef;
             mExecutorRef = executorRef;
             mSignal = signal;
@@ -70,7 +67,7 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
             } else {
                 ScheduledExecutorService executor = mExecutorRef.get();
                 if (executor != null) {
-                    mLogger.e(TAG, "Shutting down executor, callback is null");
+                    mLogger.d(TAG, "Shutting down executor since callback has been garbage collected");
                     executor.shutdownNow();
                 }
             }
@@ -79,7 +76,6 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
 
     @Override
     public void shutDown() {
-        getLogger().d(TAG, "Shutting down executor");
         mIsShutDown.set(true);
         mExecutor.shutdownNow();
     }

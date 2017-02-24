@@ -1,10 +1,6 @@
 package com.jayway.annostatemachine.dispatchers;
 
 
-import com.jayway.annostatemachine.DispatchCallback;
-import com.jayway.annostatemachine.utils.StateMachineLogger;
-
-import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,6 +12,7 @@ class BackgroundQueuePool {
     private WeakHashMap<BackgroundQueueDispatcher, Info> mPool = new WeakHashMap<>();
 
     private BackgroundQueuePool() {
+        super();
     }
 
     synchronized static BackgroundQueuePool getInstance() {
@@ -39,7 +36,7 @@ class BackgroundQueuePool {
         mPool.clear();
     }
 
-    synchronized BackgroundQueueDispatcher acquire(int sharedId, DispatchCallback callback, StateMachineLogger logger) {
+    synchronized BackgroundQueueDispatcher acquire(int sharedId) {
         BackgroundQueueDispatcher dispatcher = null;
         Info info = null;
         for (Map.Entry<BackgroundQueueDispatcher, Info> entry : mPool.entrySet()) {
@@ -53,7 +50,7 @@ class BackgroundQueuePool {
         if (info == null) {
             info = new Info(sharedId);
             info.count.incrementAndGet();
-            dispatcher = new BackgroundQueueDispatcher(callback, logger);
+            dispatcher = new BackgroundQueueDispatcher();
         } else {
             info.count.incrementAndGet();
         }

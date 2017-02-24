@@ -346,7 +346,7 @@ final class StateMachineCreator {
         javaWriter.endControlFlow();
         javaWriter.emitStatement("PayloadModifier.setSignalOnPayload(signal, payload)");
 
-        javaWriter.emitStatement("mSignalDispatcher.dispatch(signal, payload)");
+        javaWriter.emitStatement("mSignalDispatcher.dispatch(signal, payload, mDispatchCallback, mLogger)");
         javaWriter.endMethod();
 
         javaWriter.emitEmptyLine();
@@ -475,15 +475,15 @@ final class StateMachineCreator {
         String dispatchConstructorCall;
         switch (model.getDispatchMode()) {
             case BACKGROUND_QUEUE:
-                dispatchConstructorCall = "BackgroundQueueDispatcher(mDispatchCallback, mLogger)";
+                dispatchConstructorCall = "BackgroundQueueDispatcher()";
                 break;
             case SHARED_BACKGROUND_QUEUE:
-                dispatchConstructorCall = "SharedBackgroundQueueDispatcher(mDispatchCallback, " + model.getDispatchQueueId() + ", mLogger, mSharedId)";
+                dispatchConstructorCall = "SharedBackgroundQueueDispatcher(mSharedId)";
                 break;
             case CALLING_THREAD:
                 // Intentional fall-through
             default:
-                dispatchConstructorCall = "CallingThreadDispatcher(mDispatchCallback, mLogger)";
+                dispatchConstructorCall = "CallingThreadDispatcher()";
 
         }
         javaWriter.emitStatement("mSignalDispatcher = new " + dispatchConstructorCall);

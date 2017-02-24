@@ -16,16 +16,16 @@ public class SharedBackgroundQueueDispatcher extends SignalDispatcher {
 
     private AtomicBoolean mIsShutDown = new AtomicBoolean(false);
 
-    public SharedBackgroundQueueDispatcher(DispatchCallback dispatchCallback, StateMachineLogger logger, int sharedId) {
-        super(dispatchCallback, logger);
+    public SharedBackgroundQueueDispatcher(int sharedId) {
+        super();
         mSharedId = sharedId;
-        mBackgroundQueueDispatcher = BackgroundQueuePool.getInstance().acquire(sharedId, dispatchCallback, logger);
+        mBackgroundQueueDispatcher = BackgroundQueuePool.getInstance().acquire(sharedId);
     }
 
     @Override
-    public void dispatch(Enum signal, SignalPayload payload) {
+    public void dispatch(Enum signal, SignalPayload payload, DispatchCallback callback, StateMachineLogger logger) {
         if (!mIsShutDown.get()) {
-            mBackgroundQueueDispatcher.dispatch(signal, payload);
+            mBackgroundQueueDispatcher.dispatch(signal, payload, callback, logger);
         }
     }
 
