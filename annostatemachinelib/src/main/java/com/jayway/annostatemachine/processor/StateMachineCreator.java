@@ -377,8 +377,8 @@ final class StateMachineCreator {
         javaWriter.beginControlFlow("try");
 
         javaWriter.emitStatement(model.getTargetClassName() + " machine = mStateMachineRef.get()");
-        javaWriter.beginControlFlow("if (machine == null)");
-        javaWriter.emitStatement("mLogger.w(\"" + model.getTargetClassName() + "\", \"State machine is garbage collected - not calling dispatch on \" + signal);");
+        javaWriter.beginControlFlow("if (machine == null || machine.mIsShutdown.get())");
+        javaWriter.emitStatement("mLogger.w(\"" + model.getTargetClassName() + "\", \"State machine is garbage collected or shut down - not calling dispatch on \" + signal);");
         javaWriter.emitStatement("return");
         javaWriter.endControlFlow();
 
