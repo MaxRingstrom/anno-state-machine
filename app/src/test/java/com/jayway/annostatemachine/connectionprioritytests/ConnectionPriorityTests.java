@@ -16,6 +16,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1;
+import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2;
 import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1;
 import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2;
 import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1;
@@ -30,8 +32,10 @@ import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPrio
 import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2;
 import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1;
 import static com.jayway.annostatemachine.connectionprioritytests.ConnectionPriorityTests.MultiMachine.KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConnectionPriorityTests {
@@ -59,6 +63,8 @@ public class ConnectionPriorityTests {
                 .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
                 .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
                 .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
         );
 
         InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
@@ -78,10 +84,289 @@ public class ConnectionPriorityTests {
         inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
         inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
 
-        inOrder.verify(stateMachine).globalSpecificSignalTransition(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalTransition1(Matchers.<SignalPayload>any());
         inOrder.verify(stateMachine).globalSpecificSignalTransition2(Matchers.<SignalPayload>any());
 
+        inOrder.verify(stateMachine).globalAnySignalTransition1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalTransition2(Matchers.<SignalPayload>any());
+
         inOrder.verify(mMockEventListener, never()).onChangingState(Matchers.any(), Matchers.any());
+    }
+
+    @Test
+    public void testAllSpiesCalledIfLocalTransitionGuardSatisfied() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
+        inOrder.verify(stateMachine).localSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testAllSpiesCalledIfLocalAnySignalTransitionGuardSatisfied() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
+        inOrder.verify(stateMachine).localSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testAllSpiesCalledIfGlobalSpecificSignalTransitionGuardSatisfied() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
+        inOrder.verify(stateMachine).localSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testAllSpiesCalledIfGlobalAnySignalTransitionGuardSatisfied() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, true)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, true)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
+        inOrder.verify(stateMachine).localSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy2(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testSatisfiedLocalSpecificSignalTransitionBlocksFurtherTransitionConnections() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        verify(stateMachine).localSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).localSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).localAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).localAnySignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalAnySignalTransition2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testSatisfiedLocalAnySignalTransitionBlocksFurtherTransitionConnections() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        verify(stateMachine).localSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine).localSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine).localAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).localAnySignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalAnySignalTransition2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testSatisfiedGlobalSpecificSignalTransitionBlocksFurtherTransitionConnections() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        verify(stateMachine).localSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine).localSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine).localAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine).localAnySignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine).globalSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalAnySignalTransition2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testSatisfiedGlobalAnySignalTransitionBlocksFurtherTransitionConnections() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        verify(stateMachine).localSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine).localSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine).localAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine).localAnySignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine).globalSpecificSignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine).globalSpecificSignalTransition2(Matchers.<SignalPayload>any());
+        verify(stateMachine).globalAnySignalTransition1(Matchers.<SignalPayload>any());
+        verify(stateMachine, never()).globalAnySignalTransition2(Matchers.<SignalPayload>any());
     }
 
     @StateMachine
@@ -101,6 +386,8 @@ public class ConnectionPriorityTests {
         public static final String KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2 = "satisfyGlobalAnySignalSpy2";
         public static final String KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1 = "satisfyLocalAnySignalTransition1";
         public static final String KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2 = "satisfyLocalAnySignalTransition2";
+        public static final String KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1 = "satisfyGlobalAnySignalTransition1";
+        public static final String KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2 = "satisfyGlobalAnySignalTransition2";
 
         @Signals
         public enum Signal {
@@ -145,7 +432,7 @@ public class ConnectionPriorityTests {
         }
 
         @Connection(from = "*", to = "ERROR", signal = "START")
-        public boolean globalSpecificSignalTransition(SignalPayload payload) {
+        public boolean globalSpecificSignalTransition1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false);
         }
 
@@ -182,6 +469,16 @@ public class ConnectionPriorityTests {
         @Connection(from = "*", to = "*", signal = "*")
         public boolean globalAnySignalSpy2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false);
+        }
+
+        @Connection(from = "*", to = "ERROR", signal = "*")
+        public boolean globalAnySignalTransition1(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false);
+        }
+
+        @Connection(from = "*", to = "ERROR", signal = "*")
+        public boolean globalAnySignalTransition2(SignalPayload payload) {
+            return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false);
         }
     }
 }
