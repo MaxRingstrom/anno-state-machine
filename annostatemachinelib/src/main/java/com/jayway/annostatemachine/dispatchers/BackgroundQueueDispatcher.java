@@ -33,6 +33,7 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
 
     private static class DispatchRunnable implements Runnable {
 
+        private static final boolean GC_WINDOW_ENABLED = false;
         private final WeakReference<DispatchCallback> mCallbackRef;
         private final WeakReference<ScheduledExecutorService> mExecutorRef;
         private final Enum mSignal;
@@ -56,6 +57,13 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
             // task will be run directly leading to a local hard reference to the
             // DispatchCallback(state machine) which prevents the state machine and this dispatcher
             // from being garbage collected.
+            if (GC_WINDOW_ENABLED) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
             DispatchCallback callback = mCallbackRef.get();
             if (callback != null) {
                 callback.dispatchBlocking(mSignal, mPayLoad);
