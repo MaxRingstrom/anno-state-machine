@@ -1,4 +1,4 @@
-package com.jayway.annostatemachine.android.utils;
+package com.jayway.annostatemachine.android.util;
 
 import android.content.Context;
 import android.os.Handler;

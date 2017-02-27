@@ -6,12 +6,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.jayway.annostatemachine.android.emitter.OnClickEmitter;
-import com.jayway.annostatemachine.android.utils.AndroidUiThreadPoster;
+import com.jayway.annostatemachine.android.util.AndroidUiThreadPoster;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
@@ -21,7 +19,10 @@ import com.jayway.annostatemachine.generated.MainViewStateMachineImpl;
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.KEY_CHECKBOX_CHECKED;
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.CheckBoxCheckStateChanged;
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.ContentLoaded;
+import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.Next;
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.Start;
+import static com.jayway.annostatemachine.android.emitter.Emitters.onCheckedChanged;
+import static com.jayway.annostatemachine.android.emitter.Emitters.onClick;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -47,30 +48,14 @@ public class MainActivity extends AppCompatActivity {
             }
         }, new AndroidUiThreadPoster(this));
 
-        connectCheckBox(mStateMachine);
+        onCheckedChanged((CheckBox) findViewById(R.id.checkbox),
+                mStateMachine, CheckBoxCheckStateChanged, KEY_CHECKBOX_CHECKED);
 
-        connectNextButton(mStateMachine);
+        onClick(findViewById(R.id.nextButton), mStateMachine, Next);
 
         mStateMachine.send(Start, null);
 
         loadContentAsync(mStateMachine);
-    }
-
-    private void connectNextButton(MainViewStateMachineImpl mStateMachine) {
-        findViewById(R.id.nextButton).setOnClickListener(
-                new OnClickEmitter<>(mStateMachine, MainViewStateMachine.Signal.Next, null));
-    }
-
-    private void connectCheckBox(final MainViewStateMachineImpl stateMachine) {
-        final CheckBox checkbox = (CheckBox) findViewById(R.id.checkbox);
-        checkbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                SignalPayload payload = new SignalPayload();
-                payload.put(KEY_CHECKBOX_CHECKED, isChecked);
-                stateMachine.send(CheckBoxCheckStateChanged, payload);
-            }
-        });
     }
 
     @StateMachine(dispatchMode = StateMachine.DispatchMode.BACKGROUND_QUEUE)
@@ -147,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "Done", to="Finish", on="Next", runOnUiThread = true)
+        @Connection(from = "Done", to = "Finish", on = "Next", runOnUiThread = true)
         public boolean onNext(SignalPayload payload) {
             Toast.makeText(mActivity, "Next!", Toast.LENGTH_SHORT).show();
             return true;
