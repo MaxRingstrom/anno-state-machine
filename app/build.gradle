@@ -25,14 +25,14 @@ android {
 }
 
 task processorTask(type: Exec) {
-    commandLine 'cp', '../annostatemachinelib/build/libs/annostatemachinelib.jar', 'libs/'
+    commandLine 'cp', '../annostatemachinelib/build/libs/annostatemachinelib-0.0.1-alpha.jar', 'libs/'
 }
 
 processorTask.dependsOn(':annostatemachinelib:build')
 preBuild.dependsOn(processorTask)
 
 dependencies {
-    compile files('libs/annostatemachinelib.jar')
+    compile files('libs/annostatemachinelib-0.0.1-alpha.jar')
     compile fileTree(dir: 'libs', include: ['*.jar'])
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
