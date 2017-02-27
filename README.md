@@ -1,4 +1,4 @@
-# anno-statechart
+# anno-state-machine
 
 This library provides a simple way to create versatile state machines.
 
