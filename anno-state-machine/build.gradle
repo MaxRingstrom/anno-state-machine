@@ -7,10 +7,10 @@ bintray {
     configurations = ['archives']
     pkg {
         repo = 'maven'
-        name = 'annostatemachinelib'
+        name = 'anno-state-machine'
         userOrg = user
         licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/jayway/anno-statechart.git'
+        vcsUrl = 'https://github.com/jayway/anno-state-machine.git'
         version {
             name = '0.0.1-alpha'
             desc = 'Anno State Machine 0.0.1 alpha'
@@ -32,17 +32,6 @@ dependencies {
     compile 'com.squareup:javawriter:2.1.1'
     extraLibs 'com.squareup:javawriter:2.1.1'
     testCompile 'junit:junit:4.12'
-}
-
-task copyToLib( type: Copy ) {
-    into "lib"
-    from configurations.runtime
-}
-
-jar {
-    from {
-        configurations.extraLibs.collect { it.isDirectory() ? it : zipTree(it) }
-    }
 }
 
 sourceCompatibility = "1.7"

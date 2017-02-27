@@ -25,14 +25,14 @@ android {
 }
 
 task processorTask(type: Exec) {
-    commandLine 'cp', '../annostatemachinelib/build/libs/annostatemachinelib-0.0.1-alpha.jar', 'libs/'
+    commandLine 'cp', '../anno-state-machine/build/libs/anno-state-machine-0.0.1-alpha.jar', 'libs/'
 }
 
-processorTask.dependsOn(':annostatemachinelib:build')
+processorTask.dependsOn(':anno-state-machine:build')
 preBuild.dependsOn(processorTask)
 
 dependencies {
-    compile files('libs/annostatemachinelib-0.0.1-alpha.jar')
+    compile files('libs/anno-state-machine-0.0.1-alpha.jar')
     compile fileTree(dir: 'libs', include: ['*.jar'])
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
@@ -40,5 +40,5 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.1.1'
     testCompile 'junit:junit:4.12'
     testCompile "org.mockito:mockito-core:1.9.5"
-    compile project(path: ':annostatemachinelib')
+    compile project(path: ':anno-state-machine')
 }

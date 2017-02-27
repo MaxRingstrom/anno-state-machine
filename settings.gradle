@@ -1,1 +1,1 @@
-include ':app', ':annostatemachinelib'
+include ':app', ':anno-state-machine'
