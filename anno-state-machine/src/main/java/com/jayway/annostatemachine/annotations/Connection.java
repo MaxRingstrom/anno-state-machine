@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
 public @interface Connection {
     String from();
     String to();
-    String signal();
+    String on();
     boolean runOnUiThread() default false;
 }

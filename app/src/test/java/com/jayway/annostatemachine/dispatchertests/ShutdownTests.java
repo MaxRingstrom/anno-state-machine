@@ -45,12 +45,12 @@ public class ShutdownTests {
             Init, Started, Continued
         }
 
-        @Connection(from = "Init", to = "Started", signal = "Start")
+        @Connection(from = "Init", to = "Started", on = "Start")
         public boolean onStart(SignalPayload payload) {
             return true;
         }
 
-        @Connection(from = "Started", to = "Continued", signal = "Next")
+        @Connection(from = "Started", to = "Continued", on = "Next")
         public boolean onNext(SignalPayload payload) {
             return true;
         }

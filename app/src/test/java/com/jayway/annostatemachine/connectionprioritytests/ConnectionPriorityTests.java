@@ -401,82 +401,82 @@ public class ConnectionPriorityTests {
             ERROR
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "START")
         public boolean localSpecificSignalTransition1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, false);
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "START")
         public boolean localSpecificSignalTransition2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false);
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "*")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "*")
         public boolean localAnySignalTransition1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false);
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "*")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "*")
         public boolean localAnySignalTransition2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false);
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "START")
         public boolean localSpecificSignalSpy1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false);
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "START")
         public boolean localSpecificSignalSpy2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false);
         }
 
-        @Connection(from = "*", to = "ERROR", signal = "START")
+        @Connection(from = "*", to = "ERROR", on = "START")
         public boolean globalSpecificSignalTransition1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false);
         }
 
-        @Connection(from = "*", to = "ERROR", signal = "START")
+        @Connection(from = "*", to = "ERROR", on = "START")
         public boolean globalSpecificSignalTransition2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false);
         }
 
-        @Connection(from = "*", to = "*", signal = "START")
+        @Connection(from = "*", to = "*", on = "START")
         public boolean globalSpecificSignalSpy1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false);
         }
 
-        @Connection(from = "*", to = "*", signal = "START")
+        @Connection(from = "*", to = "*", on = "START")
         public boolean globalSpecificSignalSpy2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false);
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "*")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "*")
         public boolean localAnySignalSpy1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false);
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "*")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "*")
         public boolean localAnySignalSpy2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false);
         }
 
-        @Connection(from = "*", to = "*", signal = "*")
+        @Connection(from = "*", to = "*", on = "*")
         public boolean globalAnySignalSpy1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false);
         }
 
-        @Connection(from = "*", to = "*", signal = "*")
+        @Connection(from = "*", to = "*", on = "*")
         public boolean globalAnySignalSpy2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false);
         }
 
-        @Connection(from = "*", to = "ERROR", signal = "*")
+        @Connection(from = "*", to = "ERROR", on = "*")
         public boolean globalAnySignalTransition1(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false);
         }
 
-        @Connection(from = "*", to = "ERROR", signal = "*")
+        @Connection(from = "*", to = "ERROR", on = "*")
         public boolean globalAnySignalTransition2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false);
         }

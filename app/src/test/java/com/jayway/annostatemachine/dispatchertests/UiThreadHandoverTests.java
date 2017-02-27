@@ -98,7 +98,7 @@ public class UiThreadHandoverTests {
         }
 
         // Explicitly setting runOnUiThread to false even though false should be default
-        @Connection(from = "Initial", to = "Ignored", signal = "Ignore", runOnUiThread = false)
+        @Connection(from = "Initial", to = "Ignored", on = "Ignore", runOnUiThread = false)
         public boolean onIgnoreExplicitBg(SignalPayload payload) {
             assertFalse(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
@@ -106,63 +106,63 @@ public class UiThreadHandoverTests {
         }
 
         // Not setting runOnUiThread to false. False should be the default value
-        @Connection(from = "Initial", to = "Started", signal = "Ignore")
+        @Connection(from = "Initial", to = "Started", on = "Ignore")
         public boolean onIgnoreImplicitBg(SignalPayload payload) {
             assertFalse(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "Initial", to = "Started", signal = "Ignore", runOnUiThread = true)
+        @Connection(from = "Initial", to = "Started", on = "Ignore", runOnUiThread = true)
         public boolean onIgnoreFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "Initial", to = "*", signal = "Ignore", runOnUiThread = true)
+        @Connection(from = "Initial", to = "*", on = "Ignore", runOnUiThread = true)
         public boolean onSpyIgnoreFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "Initial", to = "*", signal = "Ignore")
+        @Connection(from = "Initial", to = "*", on = "Ignore")
         public boolean onSpyIgnoreBg(SignalPayload payload) {
             assertFalse(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "*", to = "*", signal = "Ignore")
+        @Connection(from = "*", to = "*", on = "Ignore")
         public boolean onGlobalSpyIgnoreBg(SignalPayload payload) {
             assertFalse(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "*", to = "*", signal = "Ignore", runOnUiThread = true)
+        @Connection(from = "*", to = "*", on = "Ignore", runOnUiThread = true)
         public boolean onGlobalSpyIgnoreFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "*", to = "*", signal = "*", runOnUiThread = true)
+        @Connection(from = "*", to = "*", on = "*", runOnUiThread = true)
         public boolean onGlobalAnySignalSpyFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "*", to = "*", signal = "*")
+        @Connection(from = "*", to = "*", on = "*")
         public boolean onGlobalAnySignalSpyBg(SignalPayload payload) {
             assertFalse(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "Initial", to = "Started", signal = "Finish")
+        @Connection(from = "Initial", to = "Started", on = "Finish")
         public boolean onFinish(SignalPayload payload) {
             mFinishedLatch.countDown();
             return true;

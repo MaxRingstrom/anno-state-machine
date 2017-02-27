@@ -54,7 +54,7 @@ public class GlobalEavesdropperTests {
             ERROR,
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "START")
         public boolean onStartSignal(SignalPayload payload) {
             return true;
         }
@@ -62,14 +62,14 @@ public class GlobalEavesdropperTests {
         // A global error connection with an unsatisfied guard that should only trigger if the current state does not handle
         // the error. This should also be true if the guards fail for the connections dealing with the
         // error event. Since the guard isn't satisfied a state transition should not occur.
-        @Connection(from = "*", to = "ERROR", signal = "ERROR")
+        @Connection(from = "*", to = "ERROR", on = "ERROR")
         public boolean onGlobalErrorWithSatisfiedGuard(SignalPayload payload) {
             return true;
         }
 
         // A Global eavesdropper that should be called for the ERROR signal even though a global
         // connection handles it.
-        @Connection(from = "*", to = "*", signal = "ERROR")
+        @Connection(from = "*", to = "*", on = "ERROR")
         public boolean globalEavesdropperOnError(SignalPayload payload) {
             return true;
         }

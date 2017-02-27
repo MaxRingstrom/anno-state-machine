@@ -92,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
             Start, ContentLoaded, CheckBoxCheckStateChanged
         }
 
-        @Connection(from = "Init", to = "LoadingContent", signal = "Start", runOnUiThread = true)
+        @Connection(from = "Init", to = "LoadingContent", on = "Start", runOnUiThread = true)
         public boolean startLoadingContent(SignalPayload payload) {
             mLoadingView.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.INVISIBLE);
@@ -101,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "LoadingContent", to = "UpAndRunning", signal = "ContentLoaded", runOnUiThread = true)
+        @Connection(from = "LoadingContent", to = "UpAndRunning", on = "ContentLoaded", runOnUiThread = true)
         public boolean onContentLoaded(SignalPayload payload) {
             mLoadingView.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.VISIBLE);
@@ -110,14 +110,14 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "LoadingContent", to = "*", signal = "ContentLoaded")
+        @Connection(from = "LoadingContent", to = "*", on = "ContentLoaded")
         public boolean eavesdropOnContentLoaded(SignalPayload payload) {
             Log.d(TAG, "Eavesdropped that content has loaded");
             return false;
         }
 
         // Safe check from states
-        @Connection(from = "UpAndRunning", to = "Done", signal = "CheckBoxCheckStateChanged", runOnUiThread = true)
+        @Connection(from = "UpAndRunning", to = "Done", on = "CheckBoxCheckStateChanged", runOnUiThread = true)
         public boolean onUserReadyToContinue(SignalPayload payload) {
             if (!payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is checked
@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "Done", to = "UpAndRunning", signal = "CheckBoxCheckStateChanged", runOnUiThread = true)
+        @Connection(from = "Done", to = "UpAndRunning", on = "CheckBoxCheckStateChanged", runOnUiThread = true)
         public boolean onUserNoLongerReadyToContinue(SignalPayload payload) {
             if (payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is unchecked

@@ -107,7 +107,7 @@ public class SharedBackgroundQueueDispatcherTests {
             Init
         }
 
-        @Connection(from = "Init", to = "*", signal = "Start")
+        @Connection(from = "Init", to = "*", on = "Start")
         public boolean onStart(SignalPayload payload) {
             onStartCallingThreadId = Thread.currentThread().getId();
             try {
@@ -118,7 +118,7 @@ public class SharedBackgroundQueueDispatcherTests {
             return true;
         }
 
-        @Connection(from = "Init", to = "*", signal = "Start2")
+        @Connection(from = "Init", to = "*", on = "Start2")
         public boolean onStart2(SignalPayload payload) {
             try {
                 Thread.sleep(DURATION_ON_START);
@@ -145,7 +145,7 @@ public class SharedBackgroundQueueDispatcherTests {
             Init
         }
 
-        @Connection(from = "Init", to = "*", signal = "Start")
+        @Connection(from = "Init", to = "*", on = "Start")
         public boolean onStart(SignalPayload payload) {
             onStartCallingThreadId = Thread.currentThread().getId();
             try {
@@ -156,7 +156,7 @@ public class SharedBackgroundQueueDispatcherTests {
             return true;
         }
 
-        @Connection(from = "Init", to = "*", signal = "Start2")
+        @Connection(from = "Init", to = "*", on = "Start2")
         public boolean onStart2(SignalPayload payload) {
             try {
                 Thread.sleep(DURATION_ON_START);
@@ -166,7 +166,7 @@ public class SharedBackgroundQueueDispatcherTests {
             return true;
         }
 
-        @Connection(from = "Init", to = "*", signal = "Start2")
+        @Connection(from = "Init", to = "*", on = "Start2")
         public boolean onStart3(SignalPayload payload) {
             try {
                 Thread.sleep(DURATION_ON_START);

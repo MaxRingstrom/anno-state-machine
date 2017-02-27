@@ -85,7 +85,7 @@ public class BasicConnectionsTests {
             STARTED
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "START")
         public boolean onStartSignal(SignalPayload payload) {
             return true;
         }
@@ -105,7 +105,7 @@ public class BasicConnectionsTests {
             STARTED
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "START")
         public boolean onStartSignal(SignalPayload payload) {
             // Return false so the state transition shouldn't be run. This is called a "guard" where
             // returning false means that the guard blocks the request.
@@ -127,13 +127,13 @@ public class BasicConnectionsTests {
             STARTED
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "START")
         public boolean onStartSignalDontDoAnything(SignalPayload payload) {
             // Return false indicating that the guard is not satisfied
             return false;
         }
 
-        @Connection(from = "INITIAL_STATE", to = "STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "STARTED", on = "START")
         public boolean onStartSignalShouldRun(SignalPayload payload) {
             // Return true indicating that the guard is satisfied
             return true;

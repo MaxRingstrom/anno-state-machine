@@ -181,7 +181,7 @@ public class BackgroundQueueDispatcherTests {
             Init, Started, StartedAgain
         }
 
-        @Connection(from = "Init", to = "Started", signal = "Start")
+        @Connection(from = "Init", to = "Started", on = "Start")
         public boolean onStart(SignalPayload payload) {
             // Make the code take some time
             try {
@@ -193,7 +193,7 @@ public class BackgroundQueueDispatcherTests {
             return true;
         }
 
-        @Connection(from = "Started", to = "*", signal = "Start")
+        @Connection(from = "Started", to = "*", on = "Start")
         public boolean onStartWhenStarted(SignalPayload payload) {
             // Make the code take some time
             try {

@@ -69,14 +69,14 @@ public class SpyTests {
             STARTED
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "START")
         public boolean onStartSignalEavesdropReturningTrue(SignalPayload payload) {
             // Return value doesn't matter if eavesdropping (to = *). This connection
             // returns true and another one returns false in order to test this.
             return true;
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "START")
         public boolean onStartSignalEavesdropReturningFalse(SignalPayload payload) {
             // Return value doesn't matter if eavesdropping (to = *). This connection
             // returns false and another one returns true in order to test this.
@@ -98,21 +98,21 @@ public class SpyTests {
             STARTED
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "START")
         public boolean onStartSignalEavesdropReturningTrue(SignalPayload payload) {
             // Return value doesn't matter if eavesdropping (to = *). This connection
             // returns true and another one returns false in order to test this.
             return true;
         }
 
-        @Connection(from = "INITIAL_STATE", to="STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to="STARTED", on = "START")
         public boolean onStartSignal(SignalPayload payload) {
             // Non eavesdropping connection that should be called last and should result
             // in a state switch to the STARTED state.
             return true;
         }
 
-        @Connection(from = "INITIAL_STATE", to = "*", signal = "START")
+        @Connection(from = "INITIAL_STATE", to = "*", on = "START")
         public boolean onStartSignalEavesdropReturningFalse(SignalPayload payload) {
             // Return value doesn't matter if eavesdropping (to = *). This connection
             // returns false and another one returns true in order to test this.

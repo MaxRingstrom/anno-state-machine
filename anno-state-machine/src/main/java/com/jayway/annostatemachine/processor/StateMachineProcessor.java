@@ -144,7 +144,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
         Connection annotation = element.getAnnotation(Connection.class);
 
         ConnectionRef connectionRef = new ConnectionRef(connectionName, annotation.from(),
-                annotation.to(), annotation.signal(), annotation.runOnUiThread());
+                annotation.to(), annotation.on(), annotation.runOnUiThread());
         mModel.add(connectionRef);
     }
 

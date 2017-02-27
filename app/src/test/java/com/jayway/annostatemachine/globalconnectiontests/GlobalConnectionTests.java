@@ -110,14 +110,14 @@ public class GlobalConnectionTests {
             ERROR_WHEN_STARTED
         }
 
-        @Connection(from = "INITIAL_STATE", to="STARTED", signal = "START")
+        @Connection(from = "INITIAL_STATE", to="STARTED", on = "START")
         public boolean onStartSignal(SignalPayload payload) {
             // Non eavesdropping connection that should be called last and should result
             // in a state switch to the STARTED state.
             return true;
         }
 
-        @Connection(from = "STARTED", to="ERROR_WHEN_STARTED", signal = "ERROR")
+        @Connection(from = "STARTED", to="ERROR_WHEN_STARTED", on = "ERROR")
         public boolean onNon404ErrorWhenStarted(SignalPayload payload) {
             // An explicit connection for non ERROR_CODE_NOT_FOUND errors. If a ERROR_CODE_NOT_FOUND
             // is received the guard will fail.
@@ -127,7 +127,7 @@ public class GlobalConnectionTests {
         // A global error connection with an unsatisfied guard that should only trigger if the current state does not handle
         // the error. This should also be true if the guards fail for the connections dealing with the
         // error event. Since the guard isn't satisfied a state transition should not occur.
-        @Connection(from = "*", to="ERROR", signal = "ERROR")
+        @Connection(from = "*", to="ERROR", on = "ERROR")
         public boolean onGlobalErrorWithUnsatisfiedGuard(SignalPayload payload) {
             return false;
         }
@@ -135,7 +135,7 @@ public class GlobalConnectionTests {
         // A global error connection that should only trigger if the current state does not handle
         // the error. This should also be true if the guards fail for the connections dealing with the
         // error event. Since the guard is satisfied a state transition should occur if it is triggered.
-        @Connection(from = "*", to="ERROR", signal = "ERROR")
+        @Connection(from = "*", to="ERROR", on = "ERROR")
         public boolean onGlobalErrorWithSatisfiedGuard(SignalPayload payload) {
             return true;
         }
