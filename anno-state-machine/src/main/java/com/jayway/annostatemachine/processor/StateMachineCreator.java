@@ -9,6 +9,7 @@ import com.jayway.annostatemachine.PayloadModifier;
 import com.jayway.annostatemachine.SignalDispatcher;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
+import com.jayway.annostatemachine.StateMachineFront;
 import com.jayway.annostatemachine.StateRef;
 import com.jayway.annostatemachine.UiThreadPoster;
 import com.jayway.annostatemachine.dispatchers.BackgroundQueueDispatcher;
@@ -192,7 +193,8 @@ final class StateMachineCreator {
                         Callable.class.getCanonicalName(),
                         CountDownLatch.class.getCanonicalName(),
                         AtomicBoolean.class.getCanonicalName(),
-                        WeakReference.class.getCanonicalName());
+                        WeakReference.class.getCanonicalName(),
+                        StateMachineFront.class.getCanonicalName());
 
                 switch (model.getDispatchMode()) {
                     case BACKGROUND_QUEUE:
@@ -211,7 +213,7 @@ final class StateMachineCreator {
 
                 generateClassJavaDoc(model, javaWriter);
                 javaWriter.beginType(model.getTargetClassName(), "class", EnumSet.of(Modifier.PUBLIC),
-                        model.getSourceClassName());
+                        model.getSourceClassName(), "StateMachineFront<" + model.getSourceClassName() + "." + model.getSignalsEnumName() + ">");
 
                 model.describeContents(javaWriter);
 
@@ -329,6 +331,7 @@ final class StateMachineCreator {
 
     private void generateSendMethods(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
+        javaWriter.emitAnnotation(Override.class);
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC, Modifier.SYNCHRONIZED), model.getSignalsEnumName(), "signal", "SignalPayload", "payload");
 
         javaWriter.beginControlFlow("if (mWaitingForInit)");
@@ -350,6 +353,7 @@ final class StateMachineCreator {
         javaWriter.endMethod();
 
         javaWriter.emitEmptyLine();
+        javaWriter.emitAnnotation(Override.class);
         javaWriter.beginMethod("void", "send", EnumSet.of(Modifier.PUBLIC), model.getSignalsEnumName(), "signal");
         javaWriter.emitStatement("send(signal, null)");
         javaWriter.endMethod();

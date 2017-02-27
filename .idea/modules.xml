@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/AnnoStatemachine.iml" filepath="$PROJECT_DIR$/AnnoStatemachine.iml" />
       <module fileurl="file://$PROJECT_DIR$/anno-state-machine/anno-state-machine.iml" filepath="$PROJECT_DIR$/anno-state-machine/anno-state-machine.iml" />
+      <module fileurl="file://$PROJECT_DIR$/anno-state-machine-android/anno-state-machine-android.iml" filepath="$PROJECT_DIR$/anno-state-machine-android/anno-state-machine-android.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

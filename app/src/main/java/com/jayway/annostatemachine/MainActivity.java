@@ -8,7 +8,9 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import com.jayway.annostatemachine.android.emitter.OnClickEmitter;
 import com.jayway.annostatemachine.android.utils.AndroidUiThreadPoster;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
@@ -25,14 +27,15 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     private Handler mHandler;
+    private MainViewStateMachineImpl mStateMachine;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final MainViewStateMachineImpl stateMachine = new MainViewStateMachineImpl(this);
-        stateMachine.init(MainViewStateMachine.State.Init, new StateMachineEventListener() {
+        mStateMachine = new MainViewStateMachineImpl(this);
+        mStateMachine.init(MainViewStateMachine.State.Init, new StateMachineEventListener() {
             @Override
             public void onDispatchingSignal(Object o, Object o1) {
                 Log.d(TAG, o1 + "->[" + o + "]");
@@ -44,11 +47,18 @@ public class MainActivity extends AppCompatActivity {
             }
         }, new AndroidUiThreadPoster(this));
 
-        connectCheckBox(stateMachine);
+        connectCheckBox(mStateMachine);
 
-        stateMachine.send(Start, null);
+        connectNextButton(mStateMachine);
 
-        loadContentAsync(stateMachine);
+        mStateMachine.send(Start, null);
+
+        loadContentAsync(mStateMachine);
+    }
+
+    private void connectNextButton(MainViewStateMachineImpl mStateMachine) {
+        findViewById(R.id.nextButton).setOnClickListener(
+                new OnClickEmitter<>(mStateMachine, MainViewStateMachine.Signal.Next, null));
     }
 
     private void connectCheckBox(final MainViewStateMachineImpl stateMachine) {
@@ -84,12 +94,12 @@ public class MainActivity extends AppCompatActivity {
 
         @States
         public enum State {
-            Init, LoadingContent, UpAndRunning, Done, Error
+            Init, LoadingContent, UpAndRunning, Done, Error, Finish
         }
 
         @Signals
         public enum Signal {
-            Start, ContentLoaded, CheckBoxCheckStateChanged
+            Start, ContentLoaded, Next, CheckBoxCheckStateChanged
         }
 
         @Connection(from = "Init", to = "LoadingContent", on = "Start", runOnUiThread = true)
@@ -134,6 +144,12 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
             mNextButton.setEnabled(false);
+            return true;
+        }
+
+        @Connection(from = "Done", to="Finish", on="Next", runOnUiThread = true)
+        public boolean onNext(SignalPayload payload) {
+            Toast.makeText(mActivity, "Next!", Toast.LENGTH_SHORT).show();
             return true;
         }
 
