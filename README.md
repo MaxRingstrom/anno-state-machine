@@ -1,6 +1,12 @@
 # anno-state-machine
 
-This library provides a simple way to create versatile state machines.
+This library provides a simple way to create versatile state machines. State machines put the logical flow of your code in focus. You can easily follow the decisions that are made and you will no longer have to keep track of multiple fields that together determine the actions to take for specific events.
+
+The result is:
+* Less time spent on debugging and wondering why your application doesn't behave as it should
+* Code that is easy to test with unit tests
+* Simple handling of (chained) asynchronous events
+* The possibility to draw diagrams that explain your code. (And even generate such diagrams in the future)
 
 ## Quick example
 ```java
@@ -10,7 +16,7 @@ public class MyStateMachine {
   @Signals public enum Signal { SayHello }
   @States public enum States { Strangers, Introduced }
   
-  @Connection(from = "Strangers", to="Introduced", signal="SayHello")
+  @Connection(from = "Strangers", to="Introduced", on="SayHello")
   protected boolean sayHello(SignalPayload payload) {
     System.out.println("Hello");
     return true;
@@ -28,7 +34,7 @@ com.package.**MyStateMachine** is converted to com.package.**generated.MyStateMa
 This is how you use it:
 ```java
 MyStateMachineImpl stateMachine = new MyStateMachineImpl();
-stateMachine.init(MyStateMachine.State.Strangers, null);
+stateMachine.init(MyStateMachine.State.Strangers);
 stateMachine.send(MyStateMachine.Signal.SayHello);
 ```
 The three lines will result in "Hello" being printed.
