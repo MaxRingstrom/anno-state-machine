@@ -14,7 +14,7 @@ The result is:
 public class MyStateMachine {
 
   @Signals public enum Signal { SayHello }
-  @States public enum States { Strangers, Introduced }
+  @States public enum State { Strangers, Introduced }
   
   @Connection(from = "Strangers", to="Introduced", on="SayHello")
   protected boolean sayHello(SignalPayload payload) {
