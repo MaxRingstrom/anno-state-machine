@@ -376,25 +376,30 @@ class Model {
         return mLocalSignalTransitions;
     }
 
-    void validateModel(String errorTag, Messager messager) {
+    boolean validateModel(String errorTag, Messager messager) {
+        boolean isValid = true;
         for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mLocalSignalTransitions.entrySet()) {
             if (entry.getValue() != null) {
                 for (ConnectionRef connectionRef : entry.getValue()) {
                     if (!mStates.contains(new StateRef(connectionRef.getFrom()))) {
+                        isValid = false;
                         messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown FROM state "
                                 + connectionRef.getFrom() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
                     if (!connectionRef.getTo().equals(ConnectionRef.WILDCARD) && !mStates.contains(new StateRef(connectionRef.getTo()))) {
+                        isValid = false;
                         messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown TO state "
                                 + connectionRef.getTo() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
                     if (!mSignals.contains(new SignalRef(connectionRef.getSignal()))) {
+                        isValid = false;
                         messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown SIGNAL "
                                 + connectionRef.getSignal() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
                 }
             }
         }
+        return isValid;
     }
 
     ArrayList<StateRef> getStates() {

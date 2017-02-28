@@ -28,7 +28,7 @@ import javax.tools.Diagnostic;
  * in a sub package of the declaration class' package. The sub package is named "generated".
  */
 @SupportedAnnotationTypes("com.jayway.annostatemachine.annotations.StateMachine")
-@SupportedSourceVersion(SourceVersion.RELEASE_7)
+@SupportedSourceVersion(SourceVersion.RELEASE_8)
 final public class StateMachineProcessor extends AbstractProcessor {
 
     private static final String TAG = StateMachineProcessor.class.getSimpleName();
@@ -51,8 +51,11 @@ final public class StateMachineProcessor extends AbstractProcessor {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
                         "Statemachine found: " + ((TypeElement) element).getQualifiedName().toString());
                 generateModel(element);
-                mModel.validateModel(element.getSimpleName().toString(), processingEnv.getMessager());
-                mStateMachineCreator.writeStateMachine(element, mModel, processingEnv);
+                if (mModel.validateModel(element.getSimpleName().toString(), processingEnv.getMessager())) {
+                    mStateMachineCreator.writeStateMachine(element, mModel, processingEnv);
+                } else {
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mModel.getSourceClassName() + " - Invalid state machine - Not generating implementation.");
+                }
             } else {
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                         "Non class using " + StateMachine.class.getSimpleName() + " annotation");
