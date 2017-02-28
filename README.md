@@ -34,8 +34,8 @@ com.package.**MyStateMachine** is converted to com.package.**generated.MyStateMa
 This is how you use it:
 ```java
 MyStateMachineImpl stateMachine = new MyStateMachineImpl();
-stateMachine.init(MyStateMachine.State.Strangers);
-stateMachine.send(MyStateMachine.Signal.SayHello);
+stateMachine.init(Strangers);
+stateMachine.send(SayHello);
 ```
 The three lines will result in "Hello" being printed.
 
