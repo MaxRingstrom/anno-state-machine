@@ -1,4 +1,86 @@
 apply plugin: 'com.android.library'
+apply plugin: "com.jfrog.bintray"
+apply plugin: 'com.github.dcendents.android-maven'
+apply plugin: 'maven'
+
+group = 'com.jayway.annostatemachine'
+version = '0.0.1-alpha'
+def theVersion = version;
+
+def siteUrl = 'https://github.com/jayway/anno-state-machine'
+def gitUrl = 'https://github.com/jayway/anno-state-machine.git'   // Git repository URL
+
+install {
+    repositories.mavenInstaller {
+        // This generates POM.xml with proper parameters
+        pom {
+            project {
+                packaging 'aar'
+
+                // Add your description here
+                name 'com.jayway.annostatemachine'
+                description = 'Android specific version of Anno State Machine'
+                url siteUrl
+
+                // Set your license
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        id 'maxringstrom'
+                        name 'Max Ringström'
+                        email 'max.ringstrom@jayway.com'
+                    }
+                }
+                scm {
+                    connection gitUrl
+                    developerConnection gitUrl
+                    url siteUrl
+                }
+            }
+        }
+    }
+}
+
+bintray {
+    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    configurations = ['archives']
+    pkg {
+        repo = 'maven'
+        name = 'anno-state-machine'
+        userOrg = user
+        licenses = ['Apache-2.0']
+        vcsUrl = gitUrl
+        version {
+            name = theVersion
+            desc = 'Anno State Machine ' + theVersion + ' for Android'
+            vcsTag = "" + theVersion + ' android'
+            attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
+        }
+    }
+}
+
+task writeNewPom {
+    doLast {
+        pom {
+            project {
+                inceptionYear '2017'
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+            }
+        }.writeTo("$buildDir/pom.xml")
+    }
+}
 
 android {
     compileSdkVersion 25
