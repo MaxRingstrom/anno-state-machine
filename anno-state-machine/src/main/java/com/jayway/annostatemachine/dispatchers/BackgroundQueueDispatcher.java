@@ -14,7 +14,7 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
 
     private static final String TAG = BackgroundQueueDispatcher.class.getSimpleName();
 
-    private final ScheduledExecutorService mExecutor;
+    private ScheduledExecutorService mExecutor;
     private AtomicBoolean mIsShutDown = new AtomicBoolean();
 
     public BackgroundQueueDispatcher() {
@@ -23,8 +23,12 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
     }
 
     public void dispatch(Enum signal, SignalPayload payload, DispatchCallback callback, StateMachineLogger logger) {
+        if (mIsShutDown.get()) {
+            logger.d(TAG, "Not dispatching signal " + signal + " since dispatcher has been shut down");
+            return;
+        }
         mExecutor.submit(new DispatchRunnable(new WeakReference<>(callback),
-                new WeakReference<>(mExecutor), signal, payload, logger));
+                new WeakReference<>(mExecutor), mIsShutDown, signal, payload, logger));
     }
 
     private static class DispatchRunnable implements Runnable {
@@ -35,9 +39,11 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
         private final Enum mSignal;
         private final SignalPayload mPayLoad;
         private final StateMachineLogger mLogger;
+        private final AtomicBoolean mIsShutDown;
 
         DispatchRunnable(WeakReference<DispatchCallback> callbackRef,
                                 WeakReference<ScheduledExecutorService> executorRef,
+                                AtomicBoolean isShutDown,
                                 Enum signal, SignalPayload payload,
                                 StateMachineLogger logger) {
             mCallbackRef = callbackRef;
@@ -45,6 +51,7 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
             mSignal = signal;
             mPayLoad = payload;
             mLogger = logger;
+            mIsShutDown = isShutDown;
         }
 
         @Override
@@ -60,6 +67,10 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+            }
+            if (mIsShutDown.get()) {
+                mLogger.d(TAG, "Not dispatching signal " + mSignal + " since dispatcher has been shut down");
+                return;
             }
             DispatchCallback callback = mCallbackRef.get();
             if (callback != null) {
@@ -78,6 +89,7 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
     public void shutDown() {
         mIsShutDown.set(true);
         mExecutor.shutdownNow();
+        mExecutor = null;
     }
 
     boolean isShutDown() {
