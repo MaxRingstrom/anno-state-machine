@@ -59,7 +59,7 @@ bintray {
         version {
             name = theVersion
             desc = 'Anno State Machine ' + theVersion + ' for Android'
-            vcsTag = "" + theVersion + ' android'
+            vcsTag = "" + theVersion + '-android'
             attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
         }
     }
