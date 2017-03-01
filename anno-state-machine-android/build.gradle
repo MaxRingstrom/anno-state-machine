@@ -5,7 +5,7 @@ apply plugin: 'maven'
 
 group = 'com.jayway.annostatemachine'
 version = '0.0.1-alpha'
-def theVersion = version;
+def theVersion = version
 
 def siteUrl = 'https://github.com/jayway/anno-state-machine'
 def gitUrl = 'https://github.com/jayway/anno-state-machine.git'   // Git repository URL
@@ -52,14 +52,14 @@ bintray {
     configurations = ['archives']
     pkg {
         repo = 'maven'
-        name = 'anno-state-machine'
+        name = 'anno-state-machine-android'
         userOrg = user
         licenses = ['Apache-2.0']
         vcsUrl = gitUrl
         version {
             name = theVersion
-            desc = 'Anno State Machine ' + theVersion + ' for Android'
-            vcsTag = "" + theVersion + '-android'
+            desc = 'Anno State Machine addons for Android'
+            vcsTag = theVersion
             attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
         }
     }
