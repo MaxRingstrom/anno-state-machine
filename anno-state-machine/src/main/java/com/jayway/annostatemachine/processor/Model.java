@@ -394,6 +394,10 @@ class Model {
 
     boolean validateModel(String errorTag, Messager messager) {
         boolean isValid = true;
+
+        isValid &= checkSignalsDefined(errorTag, messager);
+        isValid &= checkStatesDefined(errorTag, messager);
+
         for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mLocalSignalTransitions.entrySet()) {
             if (entry.getValue() != null) {
                 for (ConnectionRef connectionRef : entry.getValue()) {
@@ -416,6 +420,22 @@ class Model {
             }
         }
         return isValid;
+    }
+
+    private boolean checkStatesDefined(String errorTag, Messager messager) {
+        if (mSignalsEnumName == null || mSignalsEnumName.length() == 0) {
+            messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Couldn't find an enum with the annotation @Signals");
+            return false;
+        }
+        return true;
+    }
+
+    private boolean checkSignalsDefined(String errorTag, Messager messager) {
+        if (mSignalsEnumName == null || mSignalsEnumName.length() == 0) {
+            messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Couldn't find an enum with the annotation @Signals");
+            return false;
+        }
+        return true;
     }
 
     ArrayList<StateRef> getStates() {

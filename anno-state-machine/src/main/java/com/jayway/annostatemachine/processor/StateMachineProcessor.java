@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
+import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -61,20 +62,25 @@ final public class StateMachineProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (Element element : roundEnv.getElementsAnnotatedWith(StateMachine.class)) {
-            // Clean model for each state machine source file
-            mModel = new Model();
-            if (element.getKind().isClass()) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
-                        "Statemachine found: " + ((TypeElement) element).getQualifiedName().toString());
-                generateModel(element);
-                if (mModel.validateModel(element.getSimpleName().toString(), processingEnv.getMessager())) {
-                    mStateMachineCreator.writeStateMachine(element, mModel, processingEnv);
+            try {
+                // Clean model for each state machine source file
+                mModel = new Model();
+                if (element.getKind().isClass()) {
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE,
+                            "Statemachine found: " + ((TypeElement) element).getQualifiedName().toString());
+                    generateModel(element);
+                    if (mModel.validateModel(element.getSimpleName().toString(), processingEnv.getMessager())) {
+                        mStateMachineCreator.writeStateMachine(element, mModel, processingEnv);
+                    } else {
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mModel.getSourceClassName() + " - Invalid state machine - Not generating implementation.");
+                    }
                 } else {
-                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mModel.getSourceClassName() + " - Invalid state machine - Not generating implementation.");
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                            "Non class using " + StateMachine.class.getSimpleName() + " annotation");
                 }
-            } else {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
-                        "Non class using " + StateMachine.class.getSimpleName() + " annotation");
+            } catch (Throwable t) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Throwable caught when creating state machine impl for " + element.getSimpleName());
+                t.printStackTrace();
             }
         }
         return true;
