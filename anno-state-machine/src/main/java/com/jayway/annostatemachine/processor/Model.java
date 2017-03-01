@@ -282,6 +282,8 @@ class Model {
                 javaWriter.emitSingleLineComment("");
             }
         }
+
+        javaWriter.emitSingleLineComment(ModelJsonExporter.getVisualizerJson(this));
     }
 
     void setSignalsEnum(TypeElement element) {
