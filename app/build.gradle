@@ -2,6 +2,10 @@ apply plugin: 'com.android.application'
 apply plugin: 'com.neenbedankt.android-apt'
 apply plugin: 'me.tatarka.retrolambda'
 
+project.ext {
+    groupId = "com.jayway.annostatemachine"
+}
+
 android {
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
