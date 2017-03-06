@@ -19,6 +19,8 @@ package com.jayway.annostatemachine.connectionprioritytests;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.annotations.Connection;
+import com.jayway.annostatemachine.annotations.OnEnter;
+import com.jayway.annostatemachine.annotations.OnExit;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
@@ -85,6 +87,8 @@ public class ConnectionPriorityTests {
 
         InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
 
+        inOrder.verify(stateMachine).onEnterInitialState();
+
         inOrder.verify(stateMachine).localSpecificSignalSpy1(Matchers.<SignalPayload>any());
         inOrder.verify(stateMachine).localSpecificSignalSpy2(Matchers.<SignalPayload>any());
 
@@ -142,6 +146,52 @@ public class ConnectionPriorityTests {
         inOrder.verify(stateMachine).globalSpecificSignalSpy2(Matchers.<SignalPayload>any());
         inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
         inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
+    }
+
+    @Test
+    public void testOnEnterAndOnExitCalled() {
+        MultiMachineImpl stateMachine = spy(new MultiMachineImpl());
+        stateMachine.init(MultiMachine.State.INITIAL_STATE, mMockEventListener);
+
+        stateMachine.send(MultiMachine.Signal.START, new SignalPayload()
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_1, true)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_SPECIFIC_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_SPY_2, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_LOCAL_ANY_SIGNAL_TRANSITION_2, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_1, false)
+                .put(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false)
+        );
+
+        InOrder inOrder = Mockito.inOrder(stateMachine, mMockEventListener);
+
+        inOrder.verify(stateMachine).onEnterInitialState();
+
+        inOrder.verify(stateMachine).localSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localSpecificSignalSpy2(Matchers.<SignalPayload>any());
+
+        inOrder.verify(stateMachine).localAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).localAnySignalSpy2(Matchers.<SignalPayload>any());
+
+        inOrder.verify(stateMachine).localSpecificSignalTransition1(Matchers.<SignalPayload>any());
+
+        inOrder.verify(stateMachine).globalSpecificSignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalSpecificSignalSpy2(Matchers.<SignalPayload>any());
+
+        inOrder.verify(stateMachine).globalAnySignalSpy1(Matchers.<SignalPayload>any());
+        inOrder.verify(stateMachine).globalAnySignalSpy2(Matchers.<SignalPayload>any());
+
+        inOrder.verify(stateMachine).onExitInitialState();
+        inOrder.verify(stateMachine).onEnterStartedState();
     }
 
     @Test
@@ -495,6 +545,18 @@ public class ConnectionPriorityTests {
         @Connection(from = "*", to = "ERROR", on = "*")
         public boolean globalAnySignalTransition2(SignalPayload payload) {
             return payload.getBoolean(KEY_SATISFY_GLOBAL_ANY_SIGNAL_TRANSITION_2, false);
+        }
+
+        @OnEnter("STARTED")
+        public void onEnterStartedState() {
+        }
+
+        @OnEnter("INITIAL_STATE")
+        public void onEnterInitialState() {
+        }
+
+        @OnExit("INITIAL_STATE")
+        public void onExitInitialState() {
         }
     }
 }

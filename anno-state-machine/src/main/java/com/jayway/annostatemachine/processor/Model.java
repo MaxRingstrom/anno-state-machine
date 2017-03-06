@@ -404,15 +404,20 @@ class Model {
         isValid &= checkSignalsDefined(errorTag, messager);
         isValid &= checkStatesDefined(errorTag, messager);
 
+        HashMap<String, StateRef> nameToStateMap = new HashMap<>();
+        for (StateRef stateRef : mStates) {
+            nameToStateMap.put(stateRef.getName(), stateRef);
+        }
+
         for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mLocalSignalTransitions.entrySet()) {
             if (entry.getValue() != null) {
                 for (ConnectionRef connectionRef : entry.getValue()) {
-                    if (!mStates.contains(new StateRef(connectionRef.getFrom()))) {
+                    if (!mStates.contains(nameToStateMap.get(connectionRef.getFrom()))) {
                         isValid = false;
                         messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown FROM state "
                                 + connectionRef.getFrom() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
-                    if (!connectionRef.getTo().equals(ConnectionRef.WILDCARD) && !mStates.contains(new StateRef(connectionRef.getTo()))) {
+                    if (!connectionRef.getTo().equals(ConnectionRef.WILDCARD) && !mStates.contains(nameToStateMap.get(connectionRef.getTo()))) {
                         isValid = false;
                         messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown TO state "
                                 + connectionRef.getTo() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
@@ -423,6 +428,22 @@ class Model {
                                 + connectionRef.getSignal() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
                 }
+            }
+        }
+
+        for (Map.Entry<String, OnEnterRef> entry : mOnEnterCallbacks.entrySet()) {
+            if (!mStates.contains(nameToStateMap.get(entry.getKey()))) {
+                isValid = false;
+                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown STATE "
+                        + entry.getKey() + " used in OnEnter " + entry.getValue().getConnectionName() + ". Do you have a typo?");
+            }
+        }
+
+        for (Map.Entry<String, OnEnterRef> entry : mOnEnterCallbacks.entrySet()) {
+            if (!mStates.contains(nameToStateMap.get(entry.getKey()))) {
+                isValid = false;
+                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown STATE "
+                        + entry.getKey() + " used in OnExit " + entry.getValue().getConnectionName() + ". Do you have a typo?");
             }
         }
         return isValid;

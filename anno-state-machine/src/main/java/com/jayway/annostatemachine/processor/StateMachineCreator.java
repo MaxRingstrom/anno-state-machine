@@ -466,7 +466,9 @@ final class StateMachineCreator {
 
         javaWriter.emitStatement("mEventListener.onChangingState(mCurrentState, nextState)");
 
+        javaWriter.beginControlFlow("if (mCurrentState != null)");
         javaWriter.emitStatement("handleOnExit(mCurrentState)");
+        javaWriter.endControlFlow();
 
         javaWriter.emitStatement("mCurrentState = nextState");
 
@@ -559,9 +561,9 @@ final class StateMachineCreator {
 
         }
         javaWriter.emitStatement("mSignalDispatcher = new " + dispatchConstructorCall);
-        javaWriter.emitStatement("mCurrentState = startingState");
         javaWriter.emitStatement("mEventListener = eventListener != null ? eventListener : new NullEventListener()");
         javaWriter.emitStatement("mWaitingForInit = false");
+        javaWriter.emitStatement("switchState(startingState)");
         javaWriter.endMethod();
 
         // If the state machine has at least one connection that wants the connection method to

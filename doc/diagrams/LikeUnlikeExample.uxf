@@ -20,7 +20,8 @@
       <w>90</w>
       <h>40</h>
     </coordinates>
-    <panel_attributes>Idle</panel_attributes>
+    <panel_attributes>Idle
+bg=#99ff99</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -42,7 +43,8 @@
       <w>160</w>
       <h>40</h>
     </coordinates>
-    <panel_attributes>LikedItem</panel_attributes>
+    <panel_attributes>LikedItem
+bg=green</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -79,7 +81,8 @@ fg=gray</panel_attributes>
       <w>160</w>
       <h>80</h>
     </coordinates>
-    <panel_attributes>WaitingForNextAction</panel_attributes>
+    <panel_attributes>WaitingForNextAction
+bg=green</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -121,7 +124,7 @@ Like</panel_attributes>
   <element>
     <id>Text</id>
     <coordinates>
-      <x>450</x>
+      <x>470</x>
       <y>260</y>
       <w>190</w>
       <h>30</h>
