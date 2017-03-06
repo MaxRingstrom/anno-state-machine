@@ -17,6 +17,8 @@
 package com.jayway.annostatemachine.processor;
 
 import com.jayway.annostatemachine.ConnectionRef;
+import com.jayway.annostatemachine.OnEnterRef;
+import com.jayway.annostatemachine.OnExitRef;
 import com.jayway.annostatemachine.SignalRef;
 import com.jayway.annostatemachine.StateRef;
 import com.jayway.annostatemachine.annotations.StateMachine;
@@ -64,6 +66,8 @@ class Model {
 
     private StateMachine.DispatchMode mDispatchMode = StateMachine.DispatchMode.CALLING_THREAD;
     private int mDispatchQueueId = StateMachine.ID_GLOBAL_SHARED_QUEUE;
+    private HashMap<String, OnExitRef> mOnExitCallbacks = new HashMap<>();
+    private HashMap<String, OnEnterRef> mOnEnterCallbacks = new HashMap<>();
 
     String getStatesEnumName() {
         return mStatesEnumName;
@@ -510,5 +514,29 @@ class Model {
 
     public boolean hasUiThreadConnections() {
         return mHasUiThreadConnections;
+    }
+
+    public HashMap<String, OnExitRef> getOnExitCallbacks() {
+        return mOnExitCallbacks;
+    }
+
+    public HashMap<String, OnEnterRef> getOnEnterCallbacks() {
+        return mOnEnterCallbacks;
+    }
+
+    public void add(OnExitRef onExitRef) throws IllegalArgumentException {
+        if (mOnExitCallbacks.containsKey(onExitRef.getState())) {
+            throw new IllegalArgumentException("OnExit connection already added for state "
+                    + onExitRef.getState() + " - duplicate: " + onExitRef.getConnectionName());
+        }
+        mOnExitCallbacks.put(onExitRef.getState(), onExitRef);
+    }
+
+    public void add(OnEnterRef onEnterRef) throws IllegalArgumentException {
+        if (mOnEnterCallbacks.containsKey(onEnterRef.getState())) {
+            throw new IllegalArgumentException("OnEnter connection already added for state "
+                    + onEnterRef.getState() + " - duplicate: " + onEnterRef.getConnectionName());
+        }
+        mOnEnterCallbacks.put(onEnterRef.getState(), onEnterRef);
     }
 }

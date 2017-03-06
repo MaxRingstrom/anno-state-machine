@@ -27,6 +27,8 @@ import android.widget.Toast;
 
 import com.jayway.annostatemachine.android.util.AndroidUiThreadPoster;
 import com.jayway.annostatemachine.annotations.Connection;
+import com.jayway.annostatemachine.annotations.OnEnter;
+import com.jayway.annostatemachine.annotations.OnExit;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
@@ -152,6 +154,16 @@ public class MainActivity extends AppCompatActivity {
         public boolean onNext(SignalPayload payload) {
             Toast.makeText(mActivity, "Next!", Toast.LENGTH_SHORT).show();
             return true;
+        }
+
+        @OnEnter(value = "Done", runOnUiThread = true)
+        public void onEnterDone() {
+            Toast.makeText(mActivity, "Done state enter!", Toast.LENGTH_SHORT).show();
+        }
+
+        @OnExit(value = "Done", runOnUiThread = true)
+        public void onExitDone() {
+            Toast.makeText(mActivity, "Done state exit!", Toast.LENGTH_SHORT).show();
         }
 
     }

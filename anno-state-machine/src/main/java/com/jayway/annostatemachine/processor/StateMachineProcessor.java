@@ -18,9 +18,13 @@ package com.jayway.annostatemachine.processor;
 
 
 import com.jayway.annostatemachine.ConnectionRef;
+import com.jayway.annostatemachine.OnEnterRef;
+import com.jayway.annostatemachine.OnExitRef;
 import com.jayway.annostatemachine.SignalRef;
 import com.jayway.annostatemachine.StateRef;
 import com.jayway.annostatemachine.annotations.Connection;
+import com.jayway.annostatemachine.annotations.OnEnter;
+import com.jayway.annostatemachine.annotations.OnExit;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
@@ -29,7 +33,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.annotation.processing.AbstractProcessor;
-import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
 import javax.annotation.processing.SupportedSourceVersion;
@@ -72,7 +75,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
                     if (mModel.validateModel(element.getSimpleName().toString(), processingEnv.getMessager())) {
                         mStateMachineCreator.writeStateMachine(element, mModel, processingEnv);
                     } else {
-                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mModel.getSourceClassName() + " - Invalid state machine - Not generating implementation.");
+                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mModel.getSourceClassName() + ": Invalid state machine - Not generating implementation.");
                     }
                 } else {
                     processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
@@ -116,10 +119,54 @@ final public class StateMachineProcessor extends AbstractProcessor {
                 collectSignals(enclosedElement);
             } else if (enclosedElement.getAnnotation(Connection.class) != null) {
                 collectConnection(enclosedElement);
+            } else if (enclosedElement.getAnnotation(OnEnter.class) != null) {
+                collectOnEnter(enclosedElement);
+            } else if (enclosedElement.getAnnotation(OnExit.class) != null) {
+                collectOnExit(enclosedElement);
             }
         }
 
         mModel.aggregateConnectionsPerSignal();
+    }
+
+    private void collectOnExit(Element element) {
+        if (!(element.getKind() == ElementKind.METHOD)) {
+            // OnExit annotation on something other than a method
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Non method " + element.getSimpleName() + " using annotation " + OnExit.class.getSimpleName());
+            return;
+        }
+
+        String connectionName = element.getSimpleName().toString();
+        OnExit annotation = element.getAnnotation(OnExit.class);
+
+        OnExitRef connectionRef = new OnExitRef(annotation.value(), connectionName, annotation.runOnUiThread());
+        try {
+            mModel.add(connectionRef);
+        } catch (IllegalArgumentException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    mModel.getSourceClassName() + ": " + e.getMessage());
+        }
+    }
+
+    private void collectOnEnter(Element element) {
+        if (!(element.getKind() == ElementKind.METHOD)) {
+            // OnEnter annotation on something other than a method
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Non method " + element.getSimpleName() + " using annotation " + OnEnter.class.getSimpleName());
+            return;
+        }
+
+        String connectionName = element.getSimpleName().toString();
+        OnEnter annotation = element.getAnnotation(OnEnter.class);
+
+        OnEnterRef connectionRef = new OnEnterRef(annotation.value(), connectionName, annotation.runOnUiThread());
+        try {
+            mModel.add(connectionRef);
+        } catch (IllegalArgumentException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    mModel.getSourceClassName() + ": " + e.getMessage());
+        }
     }
 
     private void collectStates(Element element) {

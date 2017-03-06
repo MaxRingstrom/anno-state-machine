@@ -21,6 +21,8 @@ import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.DispatchCallback;
 import com.jayway.annostatemachine.NoOpUiThreadPoster;
 import com.jayway.annostatemachine.NullEventListener;
+import com.jayway.annostatemachine.OnEnterRef;
+import com.jayway.annostatemachine.OnExitRef;
 import com.jayway.annostatemachine.PayloadModifier;
 import com.jayway.annostatemachine.SignalDispatcher;
 import com.jayway.annostatemachine.SignalPayload;
@@ -247,6 +249,9 @@ final class StateMachineCreator {
                 generateSendMethods(model, javaWriter);
                 generateSwitchStateMethod(model, javaWriter);
 
+                generateHandleOnEnter(model, javaWriter);
+                generateHandleOnExit(model, javaWriter);
+
                 generateShutdownMethod(javaWriter);
 
                 if (model.hasUiThreadConnections()) {
@@ -265,6 +270,46 @@ final class StateMachineCreator {
             e.printStackTrace();
         }
 
+    }
+
+    private void generateHandleOnEnter(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod("void", "handleOnEnter", EnumSet.of(Modifier.PRIVATE), model.getStatesEnumName(), "state");
+        javaWriter.beginControlFlow("switch (state)");
+
+        for (Map.Entry<String, OnEnterRef> callbackForState : model.getOnEnterCallbacks().entrySet()) {
+            if (callbackForState.getValue().getRunOnUiThread()) {
+                javaWriter.emitStatement("case %s: callConnectionOnUiThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return null;}}); break",
+                        callbackForState.getKey(), callbackForState.getValue().getConnectionName());
+            } else {
+                javaWriter.emitStatement("case %s: %s(); break",
+                    callbackForState.getKey(), callbackForState.getValue().getConnectionName());
+            }
+        }
+
+        javaWriter.endControlFlow();
+
+        javaWriter.endMethod();
+    }
+
+    private void generateHandleOnExit(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod("void", "handleOnExit", EnumSet.of(Modifier.PRIVATE), model.getStatesEnumName(), "state");
+        javaWriter.beginControlFlow("switch (state)");
+
+        for (Map.Entry<String, OnExitRef> callbackForState : model.getOnExitCallbacks().entrySet()) {
+            if (callbackForState.getValue().getRunOnUiThread()) {
+                javaWriter.emitStatement("case %s: callConnectionOnUiThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return null;}}); break",
+                        callbackForState.getKey(), callbackForState.getValue().getConnectionName());
+            } else {
+                javaWriter.emitStatement("case %s: %s(); break",
+                        callbackForState.getKey(), callbackForState.getValue().getConnectionName());
+            }
+        }
+
+        javaWriter.endControlFlow();
+
+        javaWriter.endMethod();
     }
 
     private void generateShutdownMethod(JavaWriter javaWriter) throws IOException {
@@ -418,8 +463,15 @@ final class StateMachineCreator {
     private void generateSwitchStateMethod(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "switchState", EnumSet.of(Modifier.PRIVATE), model.getStatesEnumName(), "nextState");
+
         javaWriter.emitStatement("mEventListener.onChangingState(mCurrentState, nextState)");
+
+        javaWriter.emitStatement("handleOnExit(mCurrentState)");
+
         javaWriter.emitStatement("mCurrentState = nextState");
+
+        javaWriter.emitStatement("handleOnEnter(nextState)");
+
         javaWriter.endMethod();
     }
 
