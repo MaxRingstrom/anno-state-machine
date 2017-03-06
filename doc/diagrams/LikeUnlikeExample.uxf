@@ -21,7 +21,7 @@
       <h>40</h>
     </coordinates>
     <panel_attributes>Idle
-bg=#99ff99</panel_attributes>
+bg=#99ffff</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -44,7 +44,7 @@ bg=#99ff99</panel_attributes>
       <h>40</h>
     </coordinates>
     <panel_attributes>LikedItem
-bg=green</panel_attributes>
+bg=#99ffff</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -63,14 +63,15 @@ fg=gray</panel_attributes>
   <element>
     <id>Text</id>
     <coordinates>
-      <x>300</x>
+      <x>260</x>
       <y>540</y>
-      <w>190</w>
+      <w>230</w>
       <h>30</h>
     </coordinates>
     <panel_attributes>Report "regretted like"
 style=wordwrap
-fg=gray</panel_attributes>
+fontsize=18
+fg=#339933</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
@@ -82,7 +83,7 @@ fg=gray</panel_attributes>
       <h>80</h>
     </coordinates>
     <panel_attributes>WaitingForNextAction
-bg=green</panel_attributes>
+bg=#99ffff</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
