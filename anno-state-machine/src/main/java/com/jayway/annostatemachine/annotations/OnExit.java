@@ -9,5 +9,5 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 public @interface OnExit {
     String value();
-    boolean runOnUiThread() default false;
+    boolean runOnMainThread() default false;
 }

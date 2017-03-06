@@ -79,7 +79,7 @@ class Model {
 
     private String mStatesEnumName;
 
-    private boolean mHasUiThreadConnections = false;
+    private boolean mHasMainThreadConnections = false;
 
     void add(SignalRef signal) {
         mSignals.add(signal);
@@ -87,7 +87,7 @@ class Model {
 
     void add(ConnectionRef connection) {
 
-        mHasUiThreadConnections = mHasUiThreadConnections || connection.getRunOnUiThread();
+        mHasMainThreadConnections = mHasMainThreadConnections || connection.getRunOnMainThread();
 
         boolean hasWildcardFrom = ConnectionRef.WILDCARD.equals(connection.getFrom());
         boolean hasWildcardTo = ConnectionRef.WILDCARD.equals(connection.getTo());
@@ -533,8 +533,8 @@ class Model {
         return mDispatchQueueId;
     }
 
-    public boolean hasUiThreadConnections() {
-        return mHasUiThreadConnections;
+    public boolean hasMainThreadConnections() {
+        return mHasMainThreadConnections;
     }
 
     public HashMap<String, OnExitRef> getOnExitCallbacks() {

@@ -25,7 +25,7 @@ import android.widget.CheckBox;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.jayway.annostatemachine.android.util.AndroidUiThreadPoster;
+import com.jayway.annostatemachine.android.util.AndroidMainThreadPoster;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.OnEnter;
 import com.jayway.annostatemachine.annotations.OnExit;
@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
             public void onChangingState(Object o, Object o1) {
                 Log.d(TAG, "State switch from [" + o + "] to [" + o1 + "]");
             }
-        }, new AndroidUiThreadPoster(this));
+        }, new AndroidMainThreadPoster(this));
 
         onCheckedChanged((CheckBox) findViewById(R.id.checkbox),
                 mStateMachine, CheckBoxCheckStateChanged, KEY_CHECKBOX_CHECKED);
@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
             Start, ContentLoaded, Next, CheckBoxCheckStateChanged
         }
 
-        @Connection(from = "Init", to = "LoadingContent", on = "Start", runOnUiThread = true)
+        @Connection(from = "Init", to = "LoadingContent", on = "Start", runOnMainThread = true)
         public boolean startLoadingContent(SignalPayload payload) {
             mLoadingView.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.INVISIBLE);
@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "LoadingContent", to = "UpAndRunning", on = "ContentLoaded", runOnUiThread = true)
+        @Connection(from = "LoadingContent", to = "UpAndRunning", on = "ContentLoaded", runOnMainThread = true)
         public boolean onContentLoaded(SignalPayload payload) {
             mLoadingView.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.VISIBLE);
@@ -130,7 +130,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // Safe check from states
-        @Connection(from = "UpAndRunning", to = "Done", on = "CheckBoxCheckStateChanged", runOnUiThread = true)
+        @Connection(from = "UpAndRunning", to = "Done", on = "CheckBoxCheckStateChanged", runOnMainThread = true)
         public boolean onUserReadyToContinue(SignalPayload payload) {
             if (!payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is checked
@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "Done", to = "UpAndRunning", on = "CheckBoxCheckStateChanged", runOnUiThread = true)
+        @Connection(from = "Done", to = "UpAndRunning", on = "CheckBoxCheckStateChanged", runOnMainThread = true)
         public boolean onUserNoLongerReadyToContinue(SignalPayload payload) {
             if (payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
                 // We only continue if the check box is unchecked
@@ -150,18 +150,18 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
 
-        @Connection(from = "Done", to = "Finish", on = "Next", runOnUiThread = true)
+        @Connection(from = "Done", to = "Finish", on = "Next", runOnMainThread = true)
         public boolean onNext(SignalPayload payload) {
             Toast.makeText(mActivity, "Next!", Toast.LENGTH_SHORT).show();
             return true;
         }
 
-        @OnEnter(value = "Done", runOnUiThread = true)
+        @OnEnter(value = "Done", runOnMainThread = true)
         public void onEnterDone() {
             Toast.makeText(mActivity, "Done state enter!", Toast.LENGTH_SHORT).show();
         }
 
-        @OnExit(value = "Done", runOnUiThread = true)
+        @OnExit(value = "Done", runOnMainThread = true)
         public void onExitDone() {
             Toast.makeText(mActivity, "Done state exit!", Toast.LENGTH_SHORT).show();
         }

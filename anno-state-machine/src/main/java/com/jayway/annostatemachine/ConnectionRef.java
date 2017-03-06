@@ -40,14 +40,14 @@ public class ConnectionRef {
     private final String mFrom;
     private final String mTo;
     private final String mSignal;
-    private final boolean mRunOnUiThread;
+    private final boolean mRunOnMainThread;
 
-    public ConnectionRef(String name, String from, String to, String signal, boolean runOnUiThread) {
+    public ConnectionRef(String name, String from, String to, String signal, boolean runOnMainThread) {
         mName = name;
         mFrom = from;
         mTo = to;
         mSignal = signal;
-        mRunOnUiThread = runOnUiThread;
+        mRunOnMainThread = runOnMainThread;
     }
 
     @Override
@@ -55,7 +55,7 @@ public class ConnectionRef {
         return mName + ": " + mFrom + " --" + mSignal + "--> " + mTo;
     }
 
-    public boolean getRunOnUiThread() {
-        return mRunOnUiThread;
+    public boolean getRunOnMainThread() {
+        return mRunOnMainThread;
     }
 }

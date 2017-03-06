@@ -17,13 +17,13 @@
 package com.jayway.annostatemachine;
 
 
-public class NoOpUiThreadPoster implements UiThreadPoster {
+public class NoOpMainThreadPoster implements MainThreadPoster {
 
-    public NoOpUiThreadPoster() {
+    public NoOpMainThreadPoster() {
     }
 
     @Override
-    public void runOnUiThread(Runnable runnable) {
+    public void runOnMainThread(Runnable runnable) {
         throw new IllegalStateException("Missing UI thread poster. Did you forget to pass one to init()? You must provide a ui thread poster if you specify that a connection method should run on the UI thread");
     }
 }

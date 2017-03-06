@@ -140,7 +140,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
         String connectionName = element.getSimpleName().toString();
         OnExit annotation = element.getAnnotation(OnExit.class);
 
-        OnExitRef connectionRef = new OnExitRef(annotation.value(), connectionName, annotation.runOnUiThread());
+        OnExitRef connectionRef = new OnExitRef(annotation.value(), connectionName, annotation.runOnMainThread());
         try {
             mModel.add(connectionRef);
         } catch (IllegalArgumentException e) {
@@ -160,7 +160,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
         String connectionName = element.getSimpleName().toString();
         OnEnter annotation = element.getAnnotation(OnEnter.class);
 
-        OnEnterRef connectionRef = new OnEnterRef(annotation.value(), connectionName, annotation.runOnUiThread());
+        OnEnterRef connectionRef = new OnEnterRef(annotation.value(), connectionName, annotation.runOnMainThread());
         try {
             mModel.add(connectionRef);
         } catch (IllegalArgumentException e) {
@@ -216,7 +216,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
         Connection annotation = element.getAnnotation(Connection.class);
 
         ConnectionRef connectionRef = new ConnectionRef(connectionName, annotation.from(),
-                annotation.to(), annotation.on(), annotation.runOnUiThread());
+                annotation.to(), annotation.on(), annotation.runOnMainThread());
         mModel.add(connectionRef);
     }
 

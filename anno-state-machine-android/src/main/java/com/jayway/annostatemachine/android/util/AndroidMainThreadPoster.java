@@ -3,17 +3,17 @@ package com.jayway.annostatemachine.android.util;
 import android.content.Context;
 import android.os.Handler;
 
-import com.jayway.annostatemachine.UiThreadPoster;
+import com.jayway.annostatemachine.MainThreadPoster;
 
-public class AndroidUiThreadPoster implements UiThreadPoster {
+public class AndroidMainThreadPoster implements MainThreadPoster {
     private final Handler mHandler;
 
-    public AndroidUiThreadPoster(Context context) {
+    public AndroidMainThreadPoster(Context context) {
         mHandler = new Handler(context.getApplicationContext().getMainLooper());
     }
 
     @Override
-    public void runOnUiThread(Runnable runnable) {
+    public void runOnMainThread(Runnable runnable) {
         mHandler.post(runnable);
     }
 }

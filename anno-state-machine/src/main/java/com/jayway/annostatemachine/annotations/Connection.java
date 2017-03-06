@@ -27,5 +27,5 @@ public @interface Connection {
     String from();
     String to();
     String on();
-    boolean runOnUiThread() default false;
+    boolean runOnMainThread() default false;
 }

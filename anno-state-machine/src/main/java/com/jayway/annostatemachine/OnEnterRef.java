@@ -4,12 +4,12 @@ package com.jayway.annostatemachine;
 public class OnEnterRef {
     private String mStateName;
     private String mConnectionName;
-    private boolean mRunOnUiThread;
+    private boolean mRunOnMainThread;
 
-    public OnEnterRef(String stateName, String connectionName, boolean runOnUiThread) {
+    public OnEnterRef(String stateName, String connectionName, boolean runOnMainThread) {
         mStateName = stateName;
         mConnectionName = connectionName;
-        mRunOnUiThread= runOnUiThread;
+        mRunOnMainThread = runOnMainThread;
     }
 
     public String getState() {
@@ -20,7 +20,7 @@ public class OnEnterRef {
         return mConnectionName;
     }
 
-    public boolean getRunOnUiThread() {
-        return mRunOnUiThread;
+    public boolean getRunOnMainThread() {
+        return mRunOnMainThread;
     }
 }

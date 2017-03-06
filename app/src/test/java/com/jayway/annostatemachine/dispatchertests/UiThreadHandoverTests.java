@@ -16,9 +16,9 @@
 
 package com.jayway.annostatemachine.dispatchertests;
 
+import com.jayway.annostatemachine.MainThreadPoster;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
-import com.jayway.annostatemachine.UiThreadPoster;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
@@ -46,11 +46,11 @@ public class UiThreadHandoverTests {
     @Mock
     StateMachineEventListener mMockEventListener;
 
-    public static class SynchronousUiThreadPoster implements UiThreadPoster {
+    public static class SynchronousMainThreadPoster implements MainThreadPoster {
         public AtomicBoolean mIsOnUiThreadNow = new AtomicBoolean();
 
         @Override
-        public void runOnUiThread(Runnable runnable) {
+        public void runOnMainThread(Runnable runnable) {
             mIsOnUiThreadNow.set(true);
             runnable.run();
             mIsOnUiThreadNow.set(false);
@@ -61,7 +61,7 @@ public class UiThreadHandoverTests {
         }
     }
 
-    SynchronousUiThreadPoster mUiThreadPoster = new SynchronousUiThreadPoster();
+    SynchronousMainThreadPoster mUiThreadPoster = new SynchronousMainThreadPoster();
 
     @Test
     public void testConnectionsCalledOnCorrectThreads() {
@@ -96,7 +96,7 @@ public class UiThreadHandoverTests {
     public static class UiNonUiStateMachine {
 
         private final CountDownLatch mFinishedLatch;
-        private final SynchronousUiThreadPoster mUiThreadPoster;
+        private final SynchronousMainThreadPoster mUiThreadPoster;
 
         @Signals
         public enum Signal {
@@ -108,20 +108,20 @@ public class UiThreadHandoverTests {
             Initial, Ignored, Started
         }
 
-        public UiNonUiStateMachine(CountDownLatch finishedLatch, SynchronousUiThreadPoster uiThreadPoster) {
+        public UiNonUiStateMachine(CountDownLatch finishedLatch, SynchronousMainThreadPoster uiThreadPoster) {
             mFinishedLatch = finishedLatch;
             mUiThreadPoster = uiThreadPoster;
         }
 
-        // Explicitly setting runOnUiThread to false even though false should be default
-        @Connection(from = "Initial", to = "Ignored", on = "Ignore", runOnUiThread = false)
+        // Explicitly setting runOnMainThread to false even though false should be default
+        @Connection(from = "Initial", to = "Ignored", on = "Ignore", runOnMainThread = false)
         public boolean onIgnoreExplicitBg(SignalPayload payload) {
             assertFalse(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        // Not setting runOnUiThread to false. False should be the default value
+        // Not setting runOnMainThread to false. False should be the default value
         @Connection(from = "Initial", to = "Started", on = "Ignore")
         public boolean onIgnoreImplicitBg(SignalPayload payload) {
             assertFalse(mUiThreadPoster.isOnUiThreadNow());
@@ -129,14 +129,14 @@ public class UiThreadHandoverTests {
             return false;
         }
 
-        @Connection(from = "Initial", to = "Started", on = "Ignore", runOnUiThread = true)
+        @Connection(from = "Initial", to = "Started", on = "Ignore", runOnMainThread = true)
         public boolean onIgnoreFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "Initial", to = "*", on = "Ignore", runOnUiThread = true)
+        @Connection(from = "Initial", to = "*", on = "Ignore", runOnMainThread = true)
         public boolean onSpyIgnoreFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
@@ -157,14 +157,14 @@ public class UiThreadHandoverTests {
             return false;
         }
 
-        @Connection(from = "*", to = "*", on = "Ignore", runOnUiThread = true)
+        @Connection(from = "*", to = "*", on = "Ignore", runOnMainThread = true)
         public boolean onGlobalSpyIgnoreFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied
             return false;
         }
 
-        @Connection(from = "*", to = "*", on = "*", runOnUiThread = true)
+        @Connection(from = "*", to = "*", on = "*", runOnMainThread = true)
         public boolean onGlobalAnySignalSpyFg(SignalPayload payload) {
             assertTrue(mUiThreadPoster.isOnUiThreadNow());
             // We want all methods to be called so all guards are unsatisfied

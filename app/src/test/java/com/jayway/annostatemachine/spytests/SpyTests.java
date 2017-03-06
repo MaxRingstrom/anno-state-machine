@@ -34,6 +34,7 @@ import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
@@ -47,6 +48,8 @@ public class SpyTests {
     public void testEavesdropperConnectionDoesntChangeState() {
         SimpleEavesDroppingMachineImpl stateMachine = spy(new SimpleEavesDroppingMachineImpl());
         stateMachine.init(SimpleEavesDroppingMachine.State.INITIAL_STATE, mMockEventListener);
+        verify(mMockEventListener).onChangingState(Matchers.any(), Matchers.any());
+        reset(mMockEventListener);
         stateMachine.send(SimpleEavesDroppingMachine.Signal.START);
         verify(stateMachine).onStartSignalEavesdropReturningFalse(Matchers.<SignalPayload>any());
         verify(stateMachine).onStartSignalEavesdropReturningTrue(Matchers.<SignalPayload>any());

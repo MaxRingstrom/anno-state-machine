@@ -5,12 +5,12 @@ public class OnExitRef {
 
     private final String mConnectionName;
     private final String mStateName;
-    private boolean mRunOnUiThread;
+    private boolean mRunOnMainThread;
 
-    public OnExitRef(String stateName, String connectionName, boolean runOnUiThread) {
+    public OnExitRef(String stateName, String connectionName, boolean runOnMainThread) {
         mStateName = stateName;
         mConnectionName = connectionName;
-        mRunOnUiThread= runOnUiThread;
+        mRunOnMainThread = runOnMainThread;
     }
 
     public String getState() {
@@ -21,7 +21,7 @@ public class OnExitRef {
         return mConnectionName;
     }
 
-    public boolean getRunOnUiThread() {
-        return mRunOnUiThread;
+    public boolean getRunOnMainThread() {
+        return mRunOnMainThread;
     }
 }
