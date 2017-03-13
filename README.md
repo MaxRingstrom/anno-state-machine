@@ -42,4 +42,4 @@ The three lines will result in "Hello" being printed.
 ## What if I make a typo in the @Connection annotation?
 The validity of the state machine declaration is checked at compile time. You will get a build error if you mistype a state or signal name.
 
-You can find an extensive [manual](https://github.com/jayway/anno-statechart/wiki/manual) as well as other resources on the [wiki](https://github.com/jayway/anno-statechart/wiki/).
+You can find an extensive [manual](https://github.com/jayway/anno-statechart/wiki/manual), [examples](https://github.com/jayway/anno-statechart/wiki/examples) and other resources on the [wiki](https://github.com/jayway/anno-statechart/wiki/).
