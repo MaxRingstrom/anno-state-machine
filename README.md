@@ -2,12 +2,6 @@
 
 This library provides a simple way to create versatile state machines. State machines put the logical flow of your code in focus. You can easily follow the decisions that are made and you will no longer have to keep track of multiple fields that together determine the actions to take for specific events.
 
-The result is:
-* Less time spent on debugging and wondering why your application doesn't behave as it should
-* Code that is easy to test with unit tests
-* Simple handling of (chained) asynchronous events
-* The possibility to draw diagrams that explain your code. (And even generate such diagrams in the future)
-
 ## Quick example
 ```java
 @StateMachine
@@ -38,6 +32,12 @@ stateMachine.init(Strangers);
 stateMachine.send(SayHello);
 ```
 The three lines will result in "Hello" being printed.
+
+## Benefits
+* Less time spent on debugging and wondering why your application doesn't behave as it should
+* Code that is easy to test with unit tests
+* Simple handling of (chained) asynchronous events
+* The possibility to draw diagrams that explain your code. (And even generate such diagrams in the future)
 
 ## What if I make a typo in the @Connection annotation?
 The validity of the state machine declaration is checked at compile time. You will get a build error if you mistype a state or signal name.
