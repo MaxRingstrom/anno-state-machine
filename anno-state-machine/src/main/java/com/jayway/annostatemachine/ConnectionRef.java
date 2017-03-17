@@ -19,6 +19,7 @@ package com.jayway.annostatemachine;
 public class ConnectionRef {
 
     public static final String WILDCARD = "*";
+    public static final String AUTO = "!";
 
     public String getName() {
         return mName;

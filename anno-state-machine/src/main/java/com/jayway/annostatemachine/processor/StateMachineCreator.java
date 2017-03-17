@@ -254,6 +254,10 @@ final class StateMachineCreator {
 
                 generateShutdownMethod(javaWriter);
 
+                generateCallAutoConnections(model, javaWriter);
+
+                generateCallAutoConnectionsForStateMethods(model, javaWriter);
+
                 if (model.hasMainThreadConnections()) {
                     generateRunOnMainThreadMethod(model, writer);
                 }
@@ -474,12 +478,48 @@ final class StateMachineCreator {
 
         javaWriter.emitStatement("handleOnEnter(nextState)");
 
+        javaWriter.emitStatement(model.getStatesEnumName() + " nextStateFromAutoConnection = callAutoConnections(nextState)");
+        javaWriter.beginControlFlow("if (nextStateFromAutoConnection != null)");
+        javaWriter.emitStatement("switchState(nextStateFromAutoConnection)");
+        javaWriter.endControlFlow();
+
         javaWriter.endMethod();
     }
 
     private void generateSignalHandlersForStates(Model model, JavaWriter javaWriter) throws IOException {
         for (StateRef stateRef : model.getStates()) {
             generateSignalHandler(stateRef, model, javaWriter);
+        }
+    }
+
+    private void generateCallAutoConnections(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod(model.getStatesEnumName(), "callAutoConnections", EnumSet.of(Modifier.PRIVATE), model.getStatesEnumName(), "state");
+        javaWriter.emitStatement("SignalPayload<" + model.getSignalsEnumName() + "> payload = new SignalPayload<>()");
+        javaWriter.beginControlFlow("switch (state)");
+
+        for (Map.Entry<String, ArrayList<ConnectionRef>> autoConnectionsForState : model.getAutoConnections().entrySet()) {
+                javaWriter.emitStatement("case %s: return callAutoConnectionsFor%s(payload)",
+                        autoConnectionsForState.getKey(), autoConnectionsForState.getKey());
+        }
+
+        javaWriter.endControlFlow();
+
+        javaWriter.emitStatement("return null");
+
+        javaWriter.endMethod();
+    }
+
+    private void generateCallAutoConnectionsForStateMethods(Model model, JavaWriter javaWriter) throws IOException {
+        for (Map.Entry<String, ArrayList<ConnectionRef>> entry : model.getAutoConnections().entrySet()) {
+            javaWriter.emitEmptyLine();
+            javaWriter.beginMethod(model.getStatesEnumName(), "callAutoConnectionsFor" + entry.getKey(),
+                    EnumSet.of(Modifier.PRIVATE), "SignalPayload<" + model.getSignalsEnumName() + ">", "payload");
+            for (ConnectionRef connection : entry.getValue()) {
+                emitTransitionCall(model, connection, javaWriter);
+            }
+            javaWriter.emitStatement("return null");
+            javaWriter.endMethod();
         }
     }
 

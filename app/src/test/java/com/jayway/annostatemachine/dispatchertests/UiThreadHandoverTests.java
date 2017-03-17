@@ -24,6 +24,7 @@ import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
 import com.jayway.annostatemachine.dispatchertests.generated.UiNonUiStateMachineImpl;
+import com.jayway.annostatemachine.utils.SynchronousMainThreadPoster;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -45,21 +46,6 @@ public class UiThreadHandoverTests {
 
     @Mock
     StateMachineEventListener mMockEventListener;
-
-    public static class SynchronousMainThreadPoster implements MainThreadPoster {
-        public AtomicBoolean mIsOnUiThreadNow = new AtomicBoolean();
-
-        @Override
-        public void runOnMainThread(Runnable runnable) {
-            mIsOnUiThreadNow.set(true);
-            runnable.run();
-            mIsOnUiThreadNow.set(false);
-        }
-
-        public boolean isOnUiThreadNow() {
-            return mIsOnUiThreadNow.get();
-        }
-    }
 
     SynchronousMainThreadPoster mUiThreadPoster = new SynchronousMainThreadPoster();
 

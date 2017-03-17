@@ -68,6 +68,7 @@ class Model {
     private int mDispatchQueueId = StateMachine.ID_GLOBAL_SHARED_QUEUE;
     private HashMap<String, OnExitRef> mOnExitCallbacks = new HashMap<>();
     private HashMap<String, OnEnterRef> mOnEnterCallbacks = new HashMap<>();
+    private HashMap<String, ArrayList<ConnectionRef>> mAutoConnections = new HashMap<>();
 
     String getStatesEnumName() {
         return mStatesEnumName;
@@ -85,15 +86,21 @@ class Model {
         mSignals.add(signal);
     }
 
-    void add(ConnectionRef connection) {
+    void add(ConnectionRef connection) throws IllegalArgumentException {
 
         mHasMainThreadConnections = mHasMainThreadConnections || connection.getRunOnMainThread();
 
         boolean hasWildcardFrom = ConnectionRef.WILDCARD.equals(connection.getFrom());
         boolean hasWildcardTo = ConnectionRef.WILDCARD.equals(connection.getTo());
         boolean hasWildcardSignal = ConnectionRef.WILDCARD.equals(connection.getSignal());
+        boolean isAutoSignal = ConnectionRef.AUTO.equals(connection.getSignal());
 
-        if (hasWildcardFrom) {
+        if (isAutoSignal) {
+            if (hasWildcardFrom || hasWildcardTo) {
+                throw new IllegalArgumentException("An auto signal must specify a from state and a to state " + connection);
+            }
+            addAutoConnection(connection);
+        } else if (hasWildcardFrom) {
             // Global
             if (hasWildcardTo) {
                 // Eavesdrop
@@ -136,6 +143,15 @@ class Model {
                 }
             }
         }
+    }
+
+    private void addAutoConnection(ConnectionRef connection) {
+        ArrayList<ConnectionRef> connections = mAutoConnections.get(connection.getFrom());
+        if (connections == null) {
+            connections = new ArrayList<>();
+        }
+        connections.add(connection);
+        mAutoConnections.put(connection.getFrom(), connections);
     }
 
     private void addLocalAnySignalTransition(ConnectionRef connection) {
@@ -446,6 +462,23 @@ class Model {
                         + entry.getKey() + " used in OnExit " + entry.getValue().getConnectionName() + ". Do you have a typo?");
             }
         }
+
+        ArrayList<ConnectionRef> allAutoConnections = new ArrayList<>();
+        for (Map.Entry<String, ArrayList<ConnectionRef>> entry : mAutoConnections.entrySet()) {
+            allAutoConnections.addAll(entry.getValue());
+        }
+        for (ConnectionRef autoConnection : allAutoConnections) {
+            if (!mStates.contains(nameToStateMap.get(autoConnection.getFrom()))) {
+                isValid = false;
+                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown from STATE "
+                        + autoConnection.getFrom() + " used in auto connection " + autoConnection.getName() + ". Do you have a typo?");
+            }
+            if (!mStates.contains(nameToStateMap.get(autoConnection.getTo()))) {
+                isValid = false;
+                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown to STATE "
+                        + autoConnection.getTo() + " used in auto connection " + autoConnection.getName() + ". Do you have a typo?");
+            }
+        }
         return isValid;
     }
 
@@ -559,5 +592,9 @@ class Model {
                     + onEnterRef.getState() + " - duplicate: " + onEnterRef.getConnectionName());
         }
         mOnEnterCallbacks.put(onEnterRef.getState(), onEnterRef);
+    }
+
+    public HashMap<String, ArrayList<ConnectionRef>> getAutoConnections() {
+        return mAutoConnections;
     }
 }
