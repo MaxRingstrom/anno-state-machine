@@ -17,6 +17,7 @@
 package com.jayway.annostatemachine.processor;
 
 
+import com.jayway.annostatemachine.AnnoStateMachine;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.DispatchCallback;
 import com.jayway.annostatemachine.NoOpMainThreadPoster;
@@ -34,7 +35,6 @@ import com.jayway.annostatemachine.dispatchers.BackgroundQueueDispatcher;
 import com.jayway.annostatemachine.dispatchers.CallingThreadDispatcher;
 import com.jayway.annostatemachine.dispatchers.SharedBackgroundQueueDispatcher;
 import com.jayway.annostatemachine.utils.StateMachineLogger;
-import com.jayway.annostatemachine.utils.SystemOutLogger;
 import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
@@ -93,7 +93,7 @@ final class StateMachineCreator {
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(SignalDispatcher.class.getSimpleName(), "mSignalDispatcher", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(DispatchCallback.class.getSimpleName(), "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
-        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "new SystemOutLogger()");
+        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "AnnoStateMachine.getLogger()");
         javaWriter.emitField(MainThreadPoster.class.getSimpleName(), "mMainThreadPoster", EnumSet.of(Modifier.PRIVATE), "new NoOpMainThreadPoster()");
         javaWriter.emitField(AtomicBoolean.class.getSimpleName(), "mIsShutdown", EnumSet.of(Modifier.PRIVATE), "new AtomicBoolean(false)");
         javaWriter.emitField("int", "mSharedId");
@@ -205,7 +205,7 @@ final class StateMachineCreator {
                         SignalDispatcher.class.getCanonicalName(),
                         DispatchCallback.class.getCanonicalName(),
                         StateMachineLogger.class.getCanonicalName(),
-                        SystemOutLogger.class.getCanonicalName(),
+                        AnnoStateMachine.class.getCanonicalName(),
                         NoOpMainThreadPoster.class.getCanonicalName(),
                         MainThreadPoster.class.getCanonicalName(),
                         Callable.class.getCanonicalName(),
@@ -283,7 +283,7 @@ final class StateMachineCreator {
 
         for (Map.Entry<String, OnEnterRef> callbackForState : model.getOnEnterCallbacks().entrySet()) {
             if (callbackForState.getValue().getRunOnMainThread()) {
-                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return null;}}); break",
+                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return true;}}); break",
                         callbackForState.getKey(), callbackForState.getValue().getConnectionName());
             } else {
                 javaWriter.emitStatement("case %s: %s(); break",
@@ -303,7 +303,7 @@ final class StateMachineCreator {
 
         for (Map.Entry<String, OnExitRef> callbackForState : model.getOnExitCallbacks().entrySet()) {
             if (callbackForState.getValue().getRunOnMainThread()) {
-                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return null;}}); break",
+                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return true;}}); break",
                         callbackForState.getKey(), callbackForState.getValue().getConnectionName());
             } else {
                 javaWriter.emitStatement("case %s: %s(); break",
