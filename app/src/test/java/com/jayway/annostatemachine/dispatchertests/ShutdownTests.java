@@ -17,13 +17,17 @@
 package com.jayway.annostatemachine.dispatchertests;
 
 
+import com.jayway.annostatemachine.Config;
 import com.jayway.annostatemachine.SignalPayload;
+import com.jayway.annostatemachine.TestHelper;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
 import com.jayway.annostatemachine.dispatchertests.generated.MachineImpl;
+import com.jayway.annostatemachine.utils.SystemOutLogger;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Matchers;
@@ -35,6 +39,11 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ShutdownTests {
+
+    @Before
+    public void setUp() {
+        TestHelper.setLoggerForTest(new SystemOutLogger());
+    }
 
     @Test
     public void testSignalIgnoredAfterStateMachineShutDown() {

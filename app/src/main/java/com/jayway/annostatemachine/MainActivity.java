@@ -33,7 +33,6 @@ import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
 import com.jayway.annostatemachine.generated.MainViewStateMachineImpl;
-import com.jayway.annostatemachine.utils.StateMachineLogger;
 
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.KEY_CHECKBOX_CHECKED;
 import static com.jayway.annostatemachine.MainActivity.MainViewStateMachine.Signal.CheckBoxCheckStateChanged;
@@ -54,28 +53,6 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        AnnoStateMachine.setLogger(new StateMachineLogger() {
-            @Override
-            public void e(String tag, String msg) {
-                Log.e(tag, msg);
-            }
-
-            @Override
-            public void e(String tag, String msg, Throwable t) {
-                Log.e(tag, msg, t);
-            }
-
-            @Override
-            public void d(String tag, String msg) {
-                Log.d(tag, msg);
-            }
-
-            @Override
-            public void w(String tag, String msg) {
-                Log.w(tag, msg);
-            }
-        });
-
         mStateMachine = new MainViewStateMachineImpl(this);
         mStateMachine.init(MainViewStateMachine.State.Init, new StateMachineEventListener() {
             @Override
@@ -95,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
         onClick(findViewById(R.id.nextButton), mStateMachine, Next);
 
         mStateMachine.send(Start, null);
-
         loadContentAsync(mStateMachine);
     }
 
