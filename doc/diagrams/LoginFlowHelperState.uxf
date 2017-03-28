@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.2">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>190</x>
+      <y>100</y>
+      <w>90</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>Logged out
+bg=#99ffff</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>220</x>
+      <y>150</y>
+      <w>150</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+credentialsEntered</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;60.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>140</x>
+      <y>370</y>
+      <w>210</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>Authorizing
+bg=#99ffff</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>140</x>
+      <y>500</y>
+      <w>210</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>No user
+bg=#99ffff</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>720</x>
+      <y>370</y>
+      <w>170</w>
+      <h>80</h>
+    </coordinates>
+    <panel_attributes>Logged in
+bg=#99ffff</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>460</x>
+      <y>270</y>
+      <w>140</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>Wrong password
+bg=#99ffff</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>460</x>
+      <y>410</y>
+      <w>160</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>DisplayingNewTerms
+bg=#99ffff</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>340</x>
+      <y>410</y>
+      <w>140</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+success</panel_attributes>
+    <additional_attributes>10.0;20.0;90.0;20.0;120.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>340</x>
+      <y>370</y>
+      <w>400</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+success</panel_attributes>
+    <additional_attributes>10.0;20.0;380.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>610</x>
+      <y>410</y>
+      <w>130</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+agreed</panel_attributes>
+    <additional_attributes>10.0;20.0;110.0;20.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>300</x>
+      <y>430</y>
+      <w>110</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+noSuchUser</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;70.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>290</x>
+      <y>330</y>
+      <w>190</w>
+      <h>60</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+wrongPassword</panel_attributes>
+    <additional_attributes>10.0;40.0;10.0;10.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>460</x>
+      <y>320</y>
+      <w>200</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>TooManyFailedAttempts
+bg=#99ffff</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLState</id>
+    <coordinates>
+      <x>180</x>
+      <y>210</y>
+      <w>100</w>
+      <h>40</h>
+    </coordinates>
+    <panel_attributes>TriggerAuth</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>220</x>
+      <y>240</y>
+      <w>30</w>
+      <h>150</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+!</panel_attributes>
+    <additional_attributes>10.0;10.0;10.0;130.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>60</x>
+      <y>220</y>
+      <w>150</w>
+      <h>310</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+
+
+
+
+
+
+
+
+
+
+
+credentialsEntered</panel_attributes>
+    <additional_attributes>80.0;290.0;10.0;290.0;10.0;10.0;120.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>290</x>
+      <y>280</y>
+      <w>190</w>
+      <h>110</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;</panel_attributes>
+    <additional_attributes>10.0;90.0;10.0;10.0;170.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>270</x>
+      <y>220</y>
+      <w>400</w>
+      <h>70</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+credentialsEntered</panel_attributes>
+    <additional_attributes>260.0;50.0;260.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>270</x>
+      <y>120</y>
+      <w>590</w>
+      <h>270</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+sessionTimeout</panel_attributes>
+    <additional_attributes>470.0;250.0;470.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>270</x>
+      <y>120</y>
+      <w>660</w>
+      <h>270</h>
+    </coordinates>
+    <panel_attributes>lt=-&gt;
+logOut</panel_attributes>
+    <additional_attributes>600.0;250.0;600.0;10.0;10.0;10.0</additional_attributes>
+  </element>
+</diagram>
