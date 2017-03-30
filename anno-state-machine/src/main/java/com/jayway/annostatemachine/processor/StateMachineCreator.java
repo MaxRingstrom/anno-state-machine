@@ -18,6 +18,7 @@ package com.jayway.annostatemachine.processor;
 
 
 import com.jayway.annostatemachine.AnnoStateMachine;
+import com.jayway.annostatemachine.Config;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.DispatchCallback;
 import com.jayway.annostatemachine.NoOpMainThreadPoster;
@@ -93,7 +94,7 @@ final class StateMachineCreator {
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(SignalDispatcher.class.getSimpleName(), "mSignalDispatcher", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(DispatchCallback.class.getSimpleName(), "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
-        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "AnnoStateMachine.getLogger()");
+        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "Config.get().getLogger()");
         javaWriter.emitField(MainThreadPoster.class.getSimpleName(), "mMainThreadPoster", EnumSet.of(Modifier.PRIVATE), "new NoOpMainThreadPoster()");
         javaWriter.emitField(AtomicBoolean.class.getSimpleName(), "mIsShutdown", EnumSet.of(Modifier.PRIVATE), "new AtomicBoolean(false)");
         javaWriter.emitField("int", "mSharedId");
@@ -205,7 +206,7 @@ final class StateMachineCreator {
                         SignalDispatcher.class.getCanonicalName(),
                         DispatchCallback.class.getCanonicalName(),
                         StateMachineLogger.class.getCanonicalName(),
-                        AnnoStateMachine.class.getCanonicalName(),
+                        Config.class.getCanonicalName(),
                         NoOpMainThreadPoster.class.getCanonicalName(),
                         MainThreadPoster.class.getCanonicalName(),
                         Callable.class.getCanonicalName(),
