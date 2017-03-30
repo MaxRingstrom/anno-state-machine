@@ -17,6 +17,8 @@
 package com.jayway.annostatemachine.processor;
 
 
+import com.jayway.annostatemachine.AnnoStateMachine;
+import com.jayway.annostatemachine.Config;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.DispatchCallback;
 import com.jayway.annostatemachine.NoOpMainThreadPoster;
@@ -34,7 +36,6 @@ import com.jayway.annostatemachine.dispatchers.BackgroundQueueDispatcher;
 import com.jayway.annostatemachine.dispatchers.CallingThreadDispatcher;
 import com.jayway.annostatemachine.dispatchers.SharedBackgroundQueueDispatcher;
 import com.jayway.annostatemachine.utils.StateMachineLogger;
-import com.jayway.annostatemachine.utils.SystemOutLogger;
 import com.squareup.javawriter.JavaWriter;
 
 import java.io.IOException;
@@ -93,7 +94,7 @@ final class StateMachineCreator {
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(SignalDispatcher.class.getSimpleName(), "mSignalDispatcher", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(DispatchCallback.class.getSimpleName(), "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
-        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "new SystemOutLogger()");
+        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "Config.get().getLogger()");
         javaWriter.emitField(MainThreadPoster.class.getSimpleName(), "mMainThreadPoster", EnumSet.of(Modifier.PRIVATE), "new NoOpMainThreadPoster()");
         javaWriter.emitField(AtomicBoolean.class.getSimpleName(), "mIsShutdown", EnumSet.of(Modifier.PRIVATE), "new AtomicBoolean(false)");
         javaWriter.emitField("int", "mSharedId");
@@ -205,7 +206,7 @@ final class StateMachineCreator {
                         SignalDispatcher.class.getCanonicalName(),
                         DispatchCallback.class.getCanonicalName(),
                         StateMachineLogger.class.getCanonicalName(),
-                        SystemOutLogger.class.getCanonicalName(),
+                        Config.class.getCanonicalName(),
                         NoOpMainThreadPoster.class.getCanonicalName(),
                         MainThreadPoster.class.getCanonicalName(),
                         Callable.class.getCanonicalName(),
@@ -254,6 +255,10 @@ final class StateMachineCreator {
 
                 generateShutdownMethod(javaWriter);
 
+                generateCallAutoConnections(model, javaWriter);
+
+                generateCallAutoConnectionsForStateMethods(model, javaWriter);
+
                 if (model.hasMainThreadConnections()) {
                     generateRunOnMainThreadMethod(model, writer);
                 }
@@ -279,7 +284,7 @@ final class StateMachineCreator {
 
         for (Map.Entry<String, OnEnterRef> callbackForState : model.getOnEnterCallbacks().entrySet()) {
             if (callbackForState.getValue().getRunOnMainThread()) {
-                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return null;}}); break",
+                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return true;}}); break",
                         callbackForState.getKey(), callbackForState.getValue().getConnectionName());
             } else {
                 javaWriter.emitStatement("case %s: %s(); break",
@@ -299,7 +304,7 @@ final class StateMachineCreator {
 
         for (Map.Entry<String, OnExitRef> callbackForState : model.getOnExitCallbacks().entrySet()) {
             if (callbackForState.getValue().getRunOnMainThread()) {
-                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return null;}}); break",
+                javaWriter.emitStatement("case %s: callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {%s();return true;}}); break",
                         callbackForState.getKey(), callbackForState.getValue().getConnectionName());
             } else {
                 javaWriter.emitStatement("case %s: %s(); break",
@@ -474,12 +479,48 @@ final class StateMachineCreator {
 
         javaWriter.emitStatement("handleOnEnter(nextState)");
 
+        javaWriter.emitStatement(model.getStatesEnumName() + " nextStateFromAutoConnection = callAutoConnections(nextState)");
+        javaWriter.beginControlFlow("if (nextStateFromAutoConnection != null)");
+        javaWriter.emitStatement("switchState(nextStateFromAutoConnection)");
+        javaWriter.endControlFlow();
+
         javaWriter.endMethod();
     }
 
     private void generateSignalHandlersForStates(Model model, JavaWriter javaWriter) throws IOException {
         for (StateRef stateRef : model.getStates()) {
             generateSignalHandler(stateRef, model, javaWriter);
+        }
+    }
+
+    private void generateCallAutoConnections(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod(model.getStatesEnumName(), "callAutoConnections", EnumSet.of(Modifier.PRIVATE), model.getStatesEnumName(), "state");
+        javaWriter.emitStatement("SignalPayload<" + model.getSignalsEnumName() + "> payload = new SignalPayload<>()");
+        javaWriter.beginControlFlow("switch (state)");
+
+        for (Map.Entry<String, ArrayList<ConnectionRef>> autoConnectionsForState : model.getAutoConnections().entrySet()) {
+                javaWriter.emitStatement("case %s: return callAutoConnectionsFor%s(payload)",
+                        autoConnectionsForState.getKey(), autoConnectionsForState.getKey());
+        }
+
+        javaWriter.endControlFlow();
+
+        javaWriter.emitStatement("return null");
+
+        javaWriter.endMethod();
+    }
+
+    private void generateCallAutoConnectionsForStateMethods(Model model, JavaWriter javaWriter) throws IOException {
+        for (Map.Entry<String, ArrayList<ConnectionRef>> entry : model.getAutoConnections().entrySet()) {
+            javaWriter.emitEmptyLine();
+            javaWriter.beginMethod(model.getStatesEnumName(), "callAutoConnectionsFor" + entry.getKey(),
+                    EnumSet.of(Modifier.PRIVATE), "SignalPayload<" + model.getSignalsEnumName() + ">", "payload");
+            for (ConnectionRef connection : entry.getValue()) {
+                emitTransitionCall(model, connection, javaWriter);
+            }
+            javaWriter.emitStatement("return null");
+            javaWriter.endMethod();
         }
     }
 

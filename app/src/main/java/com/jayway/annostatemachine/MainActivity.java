@@ -72,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
         onClick(findViewById(R.id.nextButton), mStateMachine, Next);
 
         mStateMachine.send(Start, null);
-
         loadContentAsync(mStateMachine);
     }
 

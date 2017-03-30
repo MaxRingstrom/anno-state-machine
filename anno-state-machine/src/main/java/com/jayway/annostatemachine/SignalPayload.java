@@ -19,8 +19,10 @@ package com.jayway.annostatemachine;
 import java.util.HashMap;
 
 public class SignalPayload<T extends Enum> {
+    private HashMap<String, String> mStringMap;
     private HashMap<String, Boolean> mBooleanMap;
     private HashMap<String, Integer> mIntegerMap;
+    private HashMap<String, Object> mObjectMap;
     private T mSignal;
 
     public SignalPayload put(String key, Boolean value) {
@@ -31,12 +33,28 @@ public class SignalPayload<T extends Enum> {
         return this;
     }
 
+    public SignalPayload put(String key, Object value) {
+        if (mObjectMap == null) {
+            mObjectMap = new HashMap<>();
+        }
+        mObjectMap.put(key, value);
+        return this;
+    }
+
+    public SignalPayload put(String key, String value) {
+        if (mStringMap == null) {
+            mStringMap = new HashMap<>();
+        }
+        mStringMap.put(key, value);
+        return this;
+    }
+
     public SignalPayload put(String key, Integer value) {
-        if(this.mIntegerMap == null) {
-            this.mIntegerMap = new HashMap<>();
+        if(mIntegerMap == null) {
+            mIntegerMap = new HashMap<>();
         }
 
-        this.mIntegerMap.put(key, value);
+        mIntegerMap.put(key, value);
         return this;
     }
 
@@ -53,6 +71,22 @@ public class SignalPayload<T extends Enum> {
             return defaultValue;
         }
         Integer mapValue = mIntegerMap.get(key);
+        return mapValue == null ? defaultValue : mapValue;
+    }
+
+    public String getString(String key, String defaultValue) {
+        if (mStringMap == null) {
+            return defaultValue;
+        }
+        String mapValue = mStringMap.get(key);
+        return mapValue == null ? defaultValue : mapValue;
+    }
+
+    public Object getObject(String key, Object defaultValue) {
+        if (mObjectMap == null) {
+            return defaultValue;
+        }
+        Object mapValue = mObjectMap.get(key);
         return mapValue == null ? defaultValue : mapValue;
     }
 
