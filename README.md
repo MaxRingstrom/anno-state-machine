@@ -45,4 +45,4 @@ The validity of the state machine declaration is checked at compile time. You wi
 You can find an extensive [manual](https://github.com/jayway/anno-statechart/wiki/manual), [examples](https://github.com/jayway/anno-statechart/wiki/examples) and other resources on the [wiki](https://github.com/jayway/anno-statechart/wiki/).
 
 
-If you need help just post a question with the tag **anno-state-machine** on [StackOverflow](http://stackoverflow.com/).
+If you need help just post a question with the tag **anno-state-machine** on [StackOverflow](http://stackoverflow.com/questions/tagged/anno-state-machine).
