@@ -43,3 +43,6 @@ The three lines will result in "Hello" being printed.
 The validity of the state machine declaration is checked at compile time. You will get a build error if you mistype a state or signal name.
 
 You can find an extensive [manual](https://github.com/jayway/anno-statechart/wiki/manual), [examples](https://github.com/jayway/anno-statechart/wiki/examples) and other resources on the [wiki](https://github.com/jayway/anno-statechart/wiki/).
+
+
+If you need help just post a question with the tag **anno-state-machine** on [StackOverflow](http://stackoverflow.com/).
