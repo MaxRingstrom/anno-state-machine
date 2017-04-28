@@ -272,6 +272,12 @@ class Model {
                 for (ConnectionRef transition : mLocalSignalTransitions.get(state.getName())) {
                     javaWriter.emitSingleLineComment("    " + transition);
                 }
+                List<ConnectionRef> autoConnections = mAutoConnections.get(state.getName());
+                if (autoConnections != null) {
+                    for (ConnectionRef autoConnection : autoConnections) {
+                        javaWriter.emitSingleLineComment("    " + autoConnection);
+                    }
+                }
                 javaWriter.emitSingleLineComment("");
             }
 

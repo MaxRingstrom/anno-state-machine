@@ -54,6 +54,17 @@ public class ModelJsonExporter {
             }
         }
 
+        for (ArrayList<ConnectionRef> autoTransitionsForState : model.getAutoConnections().values()) {
+            for (ConnectionRef connection : autoTransitionsForState) {
+                edge = new Edge();
+                edge.from = stateIdMap.get(connection.getFrom());
+                edge.to = stateIdMap.get(connection.getTo());
+                edge.label = connection.getSignal() + " (" + connection.getName() + ")";
+                edge.arrows = "to";
+                rep.edges.add(edge);
+            }
+        }
+
         // Local any signal transitions
         ArrayList<ConnectionRef> connections;
         for (StateRef state : model.getStates()) {
