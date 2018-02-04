@@ -86,7 +86,7 @@ task writeNewPom {
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    buildToolsVersion '26.0.2'
 
     defaultConfig {
         minSdkVersion 14
@@ -134,5 +134,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.1.1'
     testCompile 'junit:junit:4.12'
 
-    compile project(path: ':anno-state-machine')
+    annotationProcessor project(path: ':anno-state-machine')
+    api project(path: ':anno-state-machine')
 }

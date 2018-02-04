@@ -1,6 +1,4 @@
 apply plugin: 'com.android.application'
-apply plugin: 'com.neenbedankt.android-apt'
-apply plugin: 'me.tatarka.retrolambda'
 
 project.ext {
     groupId = "com.jayway.annostatemachine"
@@ -8,7 +6,7 @@ project.ext {
 
 android {
     compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    buildToolsVersion '26.0.2'
     defaultConfig {
         applicationId "com.jayway.annostatemachine"
         minSdkVersion 19
@@ -37,5 +35,6 @@ dependencies {
     compile 'com.android.support:appcompat-v7:25.1.1'
     testCompile 'junit:junit:4.12'
     testCompile "org.mockito:mockito-core:1.9.5"
-    compile project(path: ':anno-state-machine-android')
+    annotationProcessor project(path: ':anno-state-machine-android')
+    implementation project(path: ':anno-state-machine-android')
 }
