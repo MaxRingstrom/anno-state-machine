@@ -33,6 +33,8 @@ stateMachine.send(SayHello);
 ```
 The three lines will result in "Hello" being printed.
 
+Since the MyStateMachineImpl class is generated from the MyStateMachine class you have to make sure that the MyStateMachine class is compiled once before referencing MyStateMachineImpl. Compile your project once you've specified a Signal enum and a State enum and you should be fine.
+
 ## Benefits
 * Less time spent on debugging and wondering why your application doesn't behave as it should
 * Code that is easy to test with unit tests
