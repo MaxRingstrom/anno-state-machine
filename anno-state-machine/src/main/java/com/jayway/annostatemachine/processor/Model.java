@@ -587,6 +587,7 @@ class Model {
     }
 
     public void add(OnExitRef onExitRef) throws IllegalArgumentException {
+        mHasMainThreadConnections = mHasMainThreadConnections || onExitRef.getRunOnMainThread();
         if (mOnExitCallbacks.containsKey(onExitRef.getState())) {
             throw new IllegalArgumentException("OnExit connection already added for state "
                     + onExitRef.getState() + " - duplicate: " + onExitRef.getConnectionName());
@@ -595,6 +596,7 @@ class Model {
     }
 
     public void add(OnEnterRef onEnterRef) throws IllegalArgumentException {
+        mHasMainThreadConnections = mHasMainThreadConnections || onEnterRef.getRunOnMainThread();
         if (mOnEnterCallbacks.containsKey(onEnterRef.getState())) {
             throw new IllegalArgumentException("OnEnter connection already added for state "
                     + onEnterRef.getState() + " - duplicate: " + onEnterRef.getConnectionName());
