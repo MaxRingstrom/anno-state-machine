@@ -32,7 +32,7 @@ bintray {
         name = 'anno-state-machine'
         userOrg = user
         licenses = ['Apache-2.0']
-        vcsUrl = 'https://github.com/jayway/anno-state-machine.git'
+        vcsUrl = 'https://github.com/maxringstrom/anno-state-machine.git'
         version {
             name = libVersion
             desc = 'Anno State Machine 0.0.1 alpha'

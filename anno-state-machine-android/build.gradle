@@ -9,8 +9,8 @@ localProps.load(project.rootProject.file('local.properties').newDataInputStream(
 group = 'com.jayway.annostatemachine'
 version = androidLibVersion
 
-def siteUrl = 'https://github.com/jayway/anno-state-machine'
-def gitUrl = 'https://github.com/jayway/anno-state-machine.git'   // Git repository URL
+def siteUrl = 'https://github.com/maxringstrom/anno-state-machine'
+def gitUrl = 'https://github.com/maxringstrom/anno-state-machine.git'   // Git repository URL
 
 install {
     repositories.mavenInstaller {
