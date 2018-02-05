@@ -35,7 +35,7 @@ install {
                     developer {
                         id 'maxringstrom'
                         name 'Max Ringström'
-                        email 'max.ringstrom@jayway.com'
+                        email 'maxringstrom@gmail.com'
                     }
                 }
                 scm {
