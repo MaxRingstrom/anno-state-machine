@@ -1,1 +1,1 @@
-include ':app', ':anno-state-machine', ':anno-state-machine-android'
+include ':app', ':anno-state-machine', ':anno-state-machine-android', ':anno-state-machine-processor'
