@@ -1,8 +1,67 @@
-apply plugin: 'java-library'
+apply plugin: 'java'
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven'
+
+Properties localProps = new Properties();
+localProps.load(project.rootProject.file('local.properties').newDataInputStream())
+
+group = 'com.jayway.annostatemachine'
+version = annotationProcessorVersion
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+bintray {
+    user = localProps.hasProperty('bintrayUser') ? localProps.property('bintrayUser') : System.getenv('BINTRAY_USER')
+    key = localProps.hasProperty('bintrayApiKey') ? localProps.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+    configurations = ['archives']
+    pkg {
+        repo = 'maven'
+        name = 'anno-state-machine-processor'
+        userOrg = user
+        licenses = ['Apache-2.0']
+        vcsUrl = 'https://github.com/maxringstrom/anno-state-machine.git'
+        version {
+            name = libVersion
+            desc = 'Anno State Machine Annotation Processor'
+            vcsTag = libVersion
+            attributes = ['gradle-plugin': 'com.use.less:com.use.less.gradle:gradle-useless-plugin']
+        }
+    }
+}
+
+task writeNewPom {
+    doLast {
+        pom {
+            project {
+                inceptionYear '2017'
+                licenses {
+                    license {
+                        name 'The Apache Software License, Version 2.0'
+                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution 'repo'
+                    }
+                }
+            }
+        }.writeTo("$buildDir/pom.xml")
+    }
+}
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation project(':anno-state-machine')
+  implementation fileTree(include: ['*.jar'], dir: 'libs')
+  implementation project(':anno-state-machine')
 }
 
 sourceCompatibility = "1.7"

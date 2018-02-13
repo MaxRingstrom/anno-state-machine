@@ -135,5 +135,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
     annotationProcessor project(path: ':anno-state-machine-processor')
-    api project(path: ':anno-state-machine')
+    implementation project(path: ':anno-state-machine')
 }

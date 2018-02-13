@@ -41,4 +41,5 @@ dependencies {
 
     annotationProcessor project(path: ':anno-state-machine-processor')
     implementation project(path: ':anno-state-machine-android')
+    implementation project(path: ':anno-state-machine')
 }
