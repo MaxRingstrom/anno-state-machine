@@ -47,6 +47,15 @@ public class BackgroundQueueDispatcher extends SignalDispatcher {
                 new WeakReference<>(mExecutor), mIsShutDown, signal, payload, logger));
     }
 
+    @Override
+    public void runOnDispatchThread(Runnable runnable, StateMachineLogger logger) {
+        if (mIsShutDown.get()) {
+            logger.d(TAG, "Not running " + runnable + " since dispatcher has been shut down");
+            return;
+        }
+        mExecutor.submit(runnable);
+    }
+
     private static class DispatchRunnable implements Runnable {
 
         private static final boolean GC_WINDOW_ENABLED = false;

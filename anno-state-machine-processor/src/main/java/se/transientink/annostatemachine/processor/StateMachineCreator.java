@@ -31,6 +31,7 @@ import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.StateMachineFront;
 import com.jayway.annostatemachine.StateRef;
+import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.dispatchers.BackgroundQueueDispatcher;
 import com.jayway.annostatemachine.dispatchers.CallingThreadDispatcher;
 import com.jayway.annostatemachine.dispatchers.SharedBackgroundQueueDispatcher;
@@ -603,7 +604,14 @@ final class StateMachineCreator {
         javaWriter.emitStatement("mSignalDispatcher = new " + dispatchConstructorCall);
         javaWriter.emitStatement("mEventListener = eventListener != null ? eventListener : new NullEventListener()");
         javaWriter.emitStatement("mWaitingForInit = false");
-        javaWriter.emitStatement("switchState(startingState)");
+        if (model.hasMainThreadConnections() && (model.getDispatchMode() != StateMachine.DispatchMode.CALLING_THREAD)) {
+            // If the state machine calls connection on the main thread there's a possibility that one
+            // such connection, via auto transitions, will be called as a result of init being called. We therefore need to
+            // run the switchState method on the dispatchers thread.
+            javaWriter.emitStatement("mSignalDispatcher.runOnDispatchThread(new Runnable() { public void run() { switchState(startingState); }}, mLogger)");
+        } else {
+            javaWriter.emitStatement("switchState(startingState)");
+        }
         javaWriter.endMethod();
 
         // If the state machine has at least one connection that wants the connection method to

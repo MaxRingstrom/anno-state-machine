@@ -10,6 +10,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SharedBackgroundQueueDispatcher extends SignalDispatcher {
 
+    private static final String TAG = SharedBackgroundQueueDispatcher.class.getSimpleName();
+    
     private final int mSharedId;
 
     private BackgroundQueueDispatcher mBackgroundQueueDispatcher;
@@ -26,6 +28,15 @@ public class SharedBackgroundQueueDispatcher extends SignalDispatcher {
     public void dispatch(Enum signal, SignalPayload payload, DispatchCallback callback, StateMachineLogger logger) {
         if (!mIsShutDown.get()) {
             mBackgroundQueueDispatcher.dispatch(signal, payload, callback, logger);
+        }
+    }
+
+    @Override
+    public void runOnDispatchThread(Runnable runnable, StateMachineLogger logger) {
+        if (!mIsShutDown.get()) {
+            mBackgroundQueueDispatcher.runOnDispatchThread(runnable, logger);
+        } else {
+            logger.d(TAG, "Not running " + runnable + " since dispatcher has been shut down");
         }
     }
 

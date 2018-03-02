@@ -39,6 +39,11 @@ public class CallingThreadDispatcher extends SignalDispatcher {
     }
 
     @Override
+    public void runOnDispatchThread(Runnable runnable, StateMachineLogger logger) {
+        runnable.run();
+    }
+
+    @Override
     public void shutDown() {
         // No necessary when we don't have a worker thread.
     }
