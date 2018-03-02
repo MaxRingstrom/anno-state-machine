@@ -23,6 +23,7 @@ import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
+import com.jayway.annostatemachine.dispatchertests.generated.InitFromMainThreadWithRunOnMainThreadMachineImpl;
 import com.jayway.annostatemachine.dispatchertests.generated.UiNonUiStateMachineImpl;
 import com.jayway.annostatemachine.utils.SynchronousMainThreadPoster;
 
@@ -32,7 +33,11 @@ import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.ArrayList;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static junit.framework.TestCase.assertTrue;
@@ -76,6 +81,84 @@ public class UiThreadHandoverTests {
         verify(spiedMachine, times(1)).onGlobalSpyIgnoreBg(Matchers.<SignalPayload>any());
         verify(spiedMachine, times(1)).onGlobalSpyIgnoreFg(Matchers.<SignalPayload>any());
         verify(spiedMachine, times(1)).onFinish(Matchers.<SignalPayload>any());
+    }
+
+    /**
+     * Test case for issue 15 - Handle deadlock when init is called from main thread with runOnMainThread=true
+     */
+    @Test
+    public void runOnMainThreadNotBlockingWhenInitCalledFromMainThread() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+
+        AtomicBoolean isRunning = new AtomicBoolean(true);
+
+        MainThreadPoster poster = new MainThreadPoster() {
+
+            final BlockingQueue<Runnable> runnables = new LinkedBlockingDeque<>();
+
+            AtomicBoolean threadStarted = new AtomicBoolean(false);
+
+            Thread dispatchThread = new Thread(() -> {
+                try {
+                    while (isRunning.get()) {
+                        Runnable runnable = runnables.poll(200, TimeUnit.MILLISECONDS);
+                        if (runnable !=  null) {
+                            runnable.run();
+                        }
+                    }
+                } catch (InterruptedException ignored) {
+                }
+            });
+
+            @Override
+            public void runOnMainThread(Runnable runnable) {
+                if (!threadStarted.getAndSet(true)) {
+                    dispatchThread.start();
+                }
+                runnables.add(runnable);
+            }
+        };
+
+
+        InitFromMainThreadWithRunOnMainThreadMachineImpl machine = new InitFromMainThreadWithRunOnMainThreadMachineImpl(latch);
+        poster.runOnMainThread(() -> machine.init(InitFromMainThreadWithRunOnMainThreadMachine.State.Init, poster));
+
+        assertTrue(latch.await(1000, TimeUnit.MILLISECONDS));
+    }
+
+    @StateMachine(dispatchMode = StateMachine.DispatchMode.BACKGROUND_QUEUE)
+    public static class InitFromMainThreadWithRunOnMainThreadMachine {
+
+        private static final String TAG = InitFromMainThreadWithRunOnMainThreadMachine.class.getSimpleName();
+        private final CountDownLatch latch;
+
+        @Signals
+        public enum Signal {
+        }
+
+        ;
+
+        @States
+        public enum State {
+            Init, AnotherState, AThirdState
+        }
+
+        ;
+
+        public InitFromMainThreadWithRunOnMainThreadMachine(CountDownLatch latch) {
+            this.latch = latch;
+        }
+
+        @Connection(from = "Init", to = "AnotherState", on = "!", runOnMainThread = true)
+        protected boolean autoTransition(SignalPayload signal) {
+            return true;
+        }
+
+        @Connection(from = "AnotherState", to = "AThirdState", on = "!", runOnMainThread = true)
+        protected boolean autoTransition2(SignalPayload signal) {
+            latch.countDown();
+            return true;
+        }
     }
 
     @StateMachine(dispatchMode = StateMachine.DispatchMode.BACKGROUND_QUEUE)

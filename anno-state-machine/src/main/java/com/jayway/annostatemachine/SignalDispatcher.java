@@ -25,5 +25,7 @@ public abstract class SignalDispatcher {
 
     public abstract void dispatch(Enum signal, SignalPayload payload, DispatchCallback callback, StateMachineLogger logger);
 
+    public abstract void runOnDispatchThread(Runnable runnable, StateMachineLogger logger);
+
     public abstract void shutDown();
 }
