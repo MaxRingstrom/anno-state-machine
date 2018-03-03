@@ -12,6 +12,9 @@ import java.util.HashMap;
 
 public class ModelJsonExporter {
 
+    private static final String GUARD_COLOR = "#ff0000";
+    private static final String NO_GUARD_COLOR = "#000000";
+
     public static String getVisualizerJson(Model model) {
 
         Gson gson = new GsonBuilder().disableHtmlEscaping().create();
@@ -50,6 +53,7 @@ public class ModelJsonExporter {
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
+                edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
             }
         }
@@ -61,6 +65,7 @@ public class ModelJsonExporter {
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
+                edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
             }
         }
@@ -78,6 +83,7 @@ public class ModelJsonExporter {
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
+                edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
             }
         }
@@ -91,6 +97,7 @@ public class ModelJsonExporter {
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
+                edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
             }
         }
@@ -103,6 +110,7 @@ public class ModelJsonExporter {
             edge.to = stateIdMap.get(connection.getTo());
             edge.label = connection.getSignal() + " (" + connection.getName() + ")";
             edge.arrows = "to";
+            edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
             rep.edges.add(edge);
         }
 
