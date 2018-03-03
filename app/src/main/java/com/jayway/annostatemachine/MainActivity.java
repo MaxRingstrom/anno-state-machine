@@ -105,7 +105,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Connection(from = "Init", to = "LoadingContent", on = "Start", runOnMainThread = true)
-        public void startLoadingContent(SignalPayload payload) {
+        public void startLoadingContent() {
             mLoadingView.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.INVISIBLE);
@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Connection(from = "LoadingContent", to = "UpAndRunning", on = "ContentLoaded", runOnMainThread = true)
-        public void onContentLoaded(SignalPayload payload) {
+        public void onContentLoaded() {
             mLoadingView.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.VISIBLE);
@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Connection(from = "LoadingContent", to = "*", on = "ContentLoaded")
-        public void eavesdropOnContentLoaded(SignalPayload payload) {
+        public void eavesdropOnContentLoaded() {
             Log.d(TAG, "Eavesdropped that content has loaded");
         }
 
@@ -147,7 +147,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Connection(from = "Done", to = "Finish", on = "Next", runOnMainThread = true)
-        public void onNext(SignalPayload payload) {
+        public void onNext() {
             Toast.makeText(mActivity, "Next!", Toast.LENGTH_SHORT).show();
         }
 

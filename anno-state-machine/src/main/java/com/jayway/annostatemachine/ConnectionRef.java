@@ -21,6 +21,14 @@ public class ConnectionRef {
     public static final String WILDCARD = "*";
     public static final String AUTO = "!";
 
+    private final int mIndexOfSignalPayloadParam;
+    private final String mName;
+    private final String mFrom;
+    private final String mTo;
+    private final String mSignal;
+    private final boolean mRunOnMainThread;
+    private final boolean mHasGuard;
+
     public String getName() {
         return mName;
     }
@@ -39,20 +47,14 @@ public class ConnectionRef {
 
     public boolean hasGuard() { return mHasGuard; }
 
-    private final String mName;
-    private final String mFrom;
-    private final String mTo;
-    private final String mSignal;
-    private final boolean mRunOnMainThread;
-    private final boolean mHasGuard;
-
-    public ConnectionRef(String name, String from, String to, String signal, boolean runOnMainThread, boolean hasGuard) {
+    public ConnectionRef(String name, String from, String to, String signal, boolean runOnMainThread, boolean hasGuard, int indexOfSignalPayloadParam) {
         mName = name;
         mFrom = from;
         mTo = to;
         mSignal = signal;
         mRunOnMainThread = runOnMainThread;
         mHasGuard = hasGuard;
+        mIndexOfSignalPayloadParam = indexOfSignalPayloadParam;
     }
 
     @Override
@@ -62,5 +64,9 @@ public class ConnectionRef {
 
     public boolean getRunOnMainThread() {
         return mRunOnMainThread;
+    }
+
+    public boolean hasSignalPayloadAsFirstParameter() {
+        return mIndexOfSignalPayloadParam == 0;
     }
 }
