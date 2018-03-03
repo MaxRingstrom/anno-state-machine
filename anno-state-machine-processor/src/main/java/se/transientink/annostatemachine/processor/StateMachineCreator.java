@@ -386,12 +386,25 @@ final class StateMachineCreator {
 
     private void emitTransitionCall(Model model, ConnectionRef connection, JavaWriter javaWriter) throws IOException {
         if (connection.getRunOnMainThread()) {
-            javaWriter.beginControlFlow("if (callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {" +
-                    " return " + connection.getName() + "(payload); }}))");
-            javaWriter.emitStatement("return " + model.getStatesEnumName() + ".%s", connection.getTo());
-            javaWriter.endControlFlow();
+            if (connection.hasGuard()) {
+                javaWriter.beginControlFlow(
+                        "if (callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {" +
+                                " return " + connection.getName() + "(payload); }}))");
+                javaWriter.emitStatement("return " + model.getStatesEnumName() + ".%s", connection.getTo());
+                javaWriter.endControlFlow();
+            } else {
+                javaWriter.emitStatement(
+                        "callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {" +
+                                connection.getName() + "(payload); return true; }})");
+                javaWriter.emitStatement("return " + model.getStatesEnumName() + ".%s", connection.getTo());
+            }
         } else {
-            javaWriter.emitStatement("if(%s(payload)) return %s.%s", connection.getName(), model.getStatesEnumName(),connection.getTo());
+            if (connection.hasGuard()) {
+                javaWriter.emitStatement("if(%s(payload)) return %s.%s", connection.getName(), model.getStatesEnumName(), connection.getTo());
+            } else {
+                javaWriter.emitStatement("%s(payload)", connection.getName());
+                javaWriter.emitStatement("return %s.%s", model.getStatesEnumName(), connection.getTo());
+            }
         }
     }
 
