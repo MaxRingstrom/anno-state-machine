@@ -20,6 +20,7 @@ package se.transientink.annostatemachine.processor;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.OnEnterRef;
 import com.jayway.annostatemachine.OnExitRef;
+import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.SignalRef;
 import com.jayway.annostatemachine.StateRef;
 import com.jayway.annostatemachine.annotations.Connection;
@@ -42,6 +43,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeKind;
 import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.Types;
@@ -221,11 +223,35 @@ final public class StateMachineProcessor extends AbstractProcessor {
         Connection annotation = element.getAnnotation(Connection.class);
 
         ConnectionRef connectionRef = new ConnectionRef(connectionName, annotation.from(),
-                annotation.to(), annotation.on(), annotation.runOnMainThread(), elementHasReturnTypeBoolean(element, processingEnv));
+                annotation.to(), annotation.on(), annotation.runOnMainThread(),
+                methodHasReturnTypeBoolean(element, processingEnv),
+                methodHasSignalPayloadAsParameter(element, processingEnv));
         mModel.add(connectionRef);
     }
 
-    private boolean elementHasReturnTypeBoolean(Element element, ProcessingEnvironment processingEnv) {
+    private int methodHasSignalPayloadAsParameter(Element element, ProcessingEnvironment processingEnv) {
+        if (!(element instanceof ExecutableElement)) {
+            return -1;
+        }
+        ExecutableElement methodElement = (ExecutableElement) element;
+
+        List<? extends VariableElement> parameters = methodElement.getParameters();
+        if (parameters == null || parameters.size() == 0) {
+            return -1;
+        }
+
+        int index = 0;
+        for (VariableElement param : parameters) {
+            if (param.asType().toString().equals(SignalPayload.class.getName())) {
+                return index;
+            }
+            index++;
+        }
+
+        return -1;
+    }
+
+    private boolean methodHasReturnTypeBoolean(Element element, ProcessingEnvironment processingEnv) {
         if (element instanceof ExecutableElement) {
             ExecutableElement methodElement = (ExecutableElement) element;
             TypeMirror returnType = methodElement.getReturnType();
