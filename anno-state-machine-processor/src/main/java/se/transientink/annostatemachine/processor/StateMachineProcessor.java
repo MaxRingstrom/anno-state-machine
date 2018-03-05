@@ -242,7 +242,8 @@ final public class StateMachineProcessor extends AbstractProcessor {
 
         int index = 0;
         for (VariableElement param : parameters) {
-            if (param.asType().toString().equals(SignalPayload.class.getName())) {
+            if (param.asType().toString().startsWith(SignalPayload.class.getName())) {
+                // startswith in order to deal with generics
                 return index;
             }
             index++;
