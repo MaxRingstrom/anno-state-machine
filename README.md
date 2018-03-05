@@ -11,9 +11,8 @@ public class MyStateMachine {
   @States public enum State { Strangers, Introduced }
   
   @Connection(from = "Strangers", to="Introduced", on="SayHello")
-  protected boolean sayHello(SignalPayload payload) {
+  protected void sayHello(SignalPayload payload) {
     System.out.println("Hello");
-    return true;
   }
 }
 ```
