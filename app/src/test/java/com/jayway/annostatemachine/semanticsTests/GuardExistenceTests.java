@@ -11,9 +11,9 @@ import com.jayway.annostatemachine.semanticsTests.generated.MachineImpl;
 
 import org.junit.Test;
 
-import static com.jayway.annostatemachine.semanticsTests.guardNoGuardCompiles.Machine.State.Init;
+import static com.jayway.annostatemachine.semanticsTests.GuardExistenceTests.Machine.State.Init;
 
-public class guardNoGuardCompiles {
+public class GuardExistenceTests {
 
     @Test
     public void machineIsCompiled() {

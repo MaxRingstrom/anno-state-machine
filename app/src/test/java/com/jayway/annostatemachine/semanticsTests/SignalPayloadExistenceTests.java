@@ -16,11 +16,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import static com.jayway.annostatemachine.semanticsTests.signalPayloadNotNeeded.PayloadMachine.State.Init;
+import static com.jayway.annostatemachine.semanticsTests.SignalPayloadExistenceTests.PayloadMachine.State.Init;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class signalPayloadNotNeeded {
+public class SignalPayloadExistenceTests {
 
     @Mock
     PayloadMachine.Callback mockCallback;
@@ -121,7 +121,7 @@ public class signalPayloadNotNeeded {
         }
 
         @Connection(from = "Seventh", to = "Eighth", on = "Next", runOnMainThread = true)
-        protected void withoutGuardRunOnMainThreadWithSignal(SignalPayload signal) {
+        protected void withoutGuardRunOnMainThreadWithSignalAndGenerics(SignalPayload<Signal> signal) {
             callback.eighth(signal);
         }
 
