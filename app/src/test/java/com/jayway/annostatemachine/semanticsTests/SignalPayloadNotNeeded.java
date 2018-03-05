@@ -3,6 +3,7 @@ package com.jayway.annostatemachine.semanticsTests;
 
 import com.jayway.annostatemachine.MainThreadPoster;
 import com.jayway.annostatemachine.SignalPayload;
+import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.annotations.Connection;
 import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
@@ -11,19 +12,19 @@ import com.jayway.annostatemachine.semanticsTests.generated.PayloadMachineImpl;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InOrder;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import static com.jayway.annostatemachine.semanticsTests.signalPayloadNotNeeded.PayloadMachine.State.Init;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static com.jayway.annostatemachine.semanticsTests.SignalPayloadNotNeeded.PayloadMachine.State.Init;
+import static junit.framework.Assert.assertTrue;
 import static org.mockito.Matchers.notNull;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class signalPayloadNotNeeded {
-
-    @Mock
-    PayloadMachine.Callback mockCallback;
+public class SignalPayloadNotNeeded {
 
     @Before
     public void setUp() {
@@ -31,14 +32,78 @@ public class signalPayloadNotNeeded {
     }
 
     @Test
-    public void payloadPresenceDoesntAffectTransitions() {
-        PayloadMachineImpl machine = new PayloadMachineImpl(mockCallback);
-        machine.init(Init, new MainThreadPoster() {
+    public void payloadPresenceDoesntAffectTransitions() throws InterruptedException {
+
+        CountDownLatch latch = new CountDownLatch(8);
+
+        PayloadMachine.Callback spyCallback = spy(new PayloadMachine.Callback() {
             @Override
-            public void runOnMainThread(Runnable runnable) {
-                runnable.run();
+            public void first() {
+                latch.countDown();
+            }
+
+            @Override
+            public void second() {
+                latch.countDown();
+            }
+
+            @Override
+            public void third() {
+                latch.countDown();
+            }
+
+            @Override
+            public void fourth() {
+                latch.countDown();
+            }
+
+            @Override
+            public void fifth(SignalPayload signal) {
+                if (signal != null) {
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void sixth(SignalPayload signal) {
+                if (signal != null) {
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void seventh(SignalPayload signal) {
+                if (signal != null) {
+                    latch.countDown();
+                }
+            }
+
+            @Override
+            public void eighth(SignalPayload signal) {
+                if (signal != null) {
+                    latch.countDown();
+                }
             }
         });
+
+        PayloadMachineImpl machine = new PayloadMachineImpl(spyCallback);
+        machine.init(Init, new StateMachineEventListener() {
+            @Override
+            public void onDispatchingSignal(Object o, Object o1) {
+                System.out.println(o1 + " --> " + o1);
+            }
+
+            @Override
+            public void onChangingState(Object o, Object o1) {
+                System.out.println("State switch " + o + " to " + o1);
+            }
+        }, new MainThreadPoster() {
+            @Override
+            public void runOnMainThread(Runnable runnable) {
+                new Thread(runnable).start();
+            }
+        });
+
         machine.send(PayloadMachine.Signal.Next);
         machine.send(PayloadMachine.Signal.Next);
         machine.send(PayloadMachine.Signal.Next);
@@ -48,17 +113,20 @@ public class signalPayloadNotNeeded {
         machine.send(PayloadMachine.Signal.Next);
         machine.send(PayloadMachine.Signal.Next);
 
-        InOrder inOrder = Mockito.inOrder(mockCallback);
-        inOrder.verify(mockCallback).first();
-        inOrder.verify(mockCallback).second();
-        inOrder.verify(mockCallback).third();
-        inOrder.verify(mockCallback).fourth();
-        inOrder.verify(mockCallback).fifth(notNull(SignalPayload.class));
-        inOrder.verify(mockCallback).sixth(notNull(SignalPayload.class));
-        inOrder.verify(mockCallback).seventh(notNull(SignalPayload.class));
-        inOrder.verify(mockCallback).eighth(notNull(SignalPayload.class));
+        assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
 
-        verifyNoMoreInteractions(mockCallback);
+        System.out.println("Latch awaited");
+
+        verify(spyCallback).first();
+        verify(spyCallback).second();
+        verify(spyCallback).third();
+        verify(spyCallback).fourth();
+        verify(spyCallback).fifth(notNull(SignalPayload.class));
+        verify(spyCallback).sixth(notNull(SignalPayload.class));
+        verify(spyCallback).seventh(notNull(SignalPayload.class));
+        verify(spyCallback).eighth(notNull(SignalPayload.class));
+
+        verifyNoMoreInteractions(spyCallback);
 
     }
 
