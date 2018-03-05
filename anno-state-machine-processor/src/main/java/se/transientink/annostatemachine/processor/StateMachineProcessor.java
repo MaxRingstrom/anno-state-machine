@@ -20,6 +20,7 @@ package se.transientink.annostatemachine.processor;
 import com.jayway.annostatemachine.ConnectionRef;
 import com.jayway.annostatemachine.OnEnterRef;
 import com.jayway.annostatemachine.OnExitRef;
+import com.jayway.annostatemachine.ParameterRef;
 import com.jayway.annostatemachine.SignalPayload;
 import com.jayway.annostatemachine.SignalRef;
 import com.jayway.annostatemachine.StateRef;
@@ -30,6 +31,8 @@ import com.jayway.annostatemachine.annotations.Signals;
 import com.jayway.annostatemachine.annotations.StateMachine;
 import com.jayway.annostatemachine.annotations.States;
 
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -227,31 +230,23 @@ final public class StateMachineProcessor extends AbstractProcessor {
         ConnectionRef connectionRef = new ConnectionRef(connectionName, annotation.from(),
                 annotation.to(), annotation.on(), annotation.runOnMainThread(),
                 methodHasReturnTypeBoolean(element, processingEnv),
-                methodHasSignalPayloadAsParameter(element, processingEnv));
+                getParameters(element));
         mModel.add(connectionRef);
     }
 
-    private int methodHasSignalPayloadAsParameter(Element element, ProcessingEnvironment processingEnv) {
-        if (!(element instanceof ExecutableElement)) {
-            return -1;
-        }
-        ExecutableElement methodElement = (ExecutableElement) element;
-
-        List<? extends VariableElement> parameters = methodElement.getParameters();
-        if (parameters == null || parameters.size() == 0) {
-            return -1;
-        }
-
-        int index = 0;
-        for (VariableElement param : parameters) {
-            if (param.asType().toString().startsWith(SignalPayload.class.getName())) {
-                // startswith in order to deal with generics
-                return index;
+    private LinkedList<ParameterRef> getParameters(Element element) {
+        LinkedList<ParameterRef> params = new LinkedList<>();
+        if (element instanceof ExecutableElement) {
+            ExecutableElement methodElement = (ExecutableElement) element;
+            List<? extends VariableElement> parameters = methodElement.getParameters();
+            if (parameters != null) {
+                for (VariableElement param : parameters) {
+                    params.add(new ParameterRef(param.asType().toString(), param.getSimpleName().toString()));
+                }
             }
-            index++;
         }
 
-        return -1;
+        return params;
     }
 
     private boolean methodHasReturnTypeBoolean(Element element, ProcessingEnvironment processingEnv) {
