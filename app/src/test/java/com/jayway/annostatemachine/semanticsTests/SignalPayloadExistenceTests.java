@@ -16,6 +16,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import static com.jayway.annostatemachine.semanticsTests.SignalPayloadExistenceTests.PayloadMachine.State.Init;
 import static org.mockito.Matchers.notNull;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -31,8 +34,9 @@ public class SignalPayloadExistenceTests {
     }
 
     @Test
-    public void payloadPresenceDoesntAffectTransitions() {
-        PayloadMachineImpl machine = new PayloadMachineImpl(mockCallback);
+    public void payloadPresenceDoesntAffectTransitions() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        PayloadMachineImpl machine = new PayloadMachineImpl(mockCallback, latch);
         machine.init(Init, new MainThreadPoster() {
             @Override
             public void runOnMainThread(Runnable runnable) {
@@ -47,6 +51,8 @@ public class SignalPayloadExistenceTests {
         machine.send(PayloadMachine.Signal.Next);
         machine.send(PayloadMachine.Signal.Next);
         machine.send(PayloadMachine.Signal.Next);
+
+        latch.await(1000, TimeUnit.MILLISECONDS);
 
         InOrder inOrder = Mockito.inOrder(mockCallback);
         inOrder.verify(mockCallback).first();
@@ -67,6 +73,7 @@ public class SignalPayloadExistenceTests {
 
         private static final String TAG = PayloadMachine.class.getSimpleName();
         private final Callback callback;
+        private final CountDownLatch latch;
 
         @Signals
         public enum Signal {Next}
@@ -74,7 +81,8 @@ public class SignalPayloadExistenceTests {
         @States
         public enum State { Init, First, Second, Third, Fourth, Fifth, Sixth, Seventh, Eighth}
 
-        public PayloadMachine(Callback callback) {
+        public PayloadMachine(Callback callback, CountDownLatch latch) {
+            this.latch = latch;
             this.callback = callback;
         }
 
@@ -123,6 +131,7 @@ public class SignalPayloadExistenceTests {
         @Connection(from = "Seventh", to = "Eighth", on = "Next", runOnMainThread = true)
         protected void withoutGuardRunOnMainThreadWithSignalAndGenerics(SignalPayload<Signal> signal) {
             callback.eighth(signal);
+            latch.countDown();
         }
 
         protected interface Callback {
