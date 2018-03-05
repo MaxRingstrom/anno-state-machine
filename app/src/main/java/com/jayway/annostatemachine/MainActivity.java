@@ -105,27 +105,24 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Connection(from = "Init", to = "LoadingContent", on = "Start", runOnMainThread = true)
-        public boolean startLoadingContent(SignalPayload payload) {
+        public void startLoadingContent() {
             mLoadingView.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.INVISIBLE);
             // We do not have a guard on this connection so we always return true
-            return true;
         }
 
         @Connection(from = "LoadingContent", to = "UpAndRunning", on = "ContentLoaded", runOnMainThread = true)
-        public boolean onContentLoaded(SignalPayload payload) {
+        public void onContentLoaded() {
             mLoadingView.setVisibility(View.INVISIBLE);
             mNextButton.setVisibility(View.VISIBLE);
             mCheckBox.setVisibility(View.VISIBLE);
             mText.setText("Welcome! - content has been loaded");
-            return true;
         }
 
         @Connection(from = "LoadingContent", to = "*", on = "ContentLoaded")
-        public boolean eavesdropOnContentLoaded(SignalPayload payload) {
+        public void eavesdropOnContentLoaded() {
             Log.d(TAG, "Eavesdropped that content has loaded");
-            return false;
         }
 
         // Safe check from states
@@ -150,9 +147,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Connection(from = "Done", to = "Finish", on = "Next", runOnMainThread = true)
-        public boolean onNext(SignalPayload payload) {
+        public void onNext() {
             Toast.makeText(mActivity, "Next!", Toast.LENGTH_SHORT).show();
-            return true;
         }
 
         @OnEnter(value = "Done", runOnMainThread = true)

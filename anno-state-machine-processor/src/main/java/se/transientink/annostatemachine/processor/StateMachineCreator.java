@@ -376,22 +376,37 @@ final class StateMachineCreator {
     }
 
     private void emitSpyCall(ConnectionRef connection, JavaWriter javaWriter) throws IOException {
+        String arguments = connection.hasSignalPayloadAsFirstParameter() ? "payload" : "";
         if (connection.getRunOnMainThread()) {
             javaWriter.emitStatement("callConnectionOnMainThread(new Callable<Boolean>() {" +
-                    " public Boolean call() throws Exception { return %s(payload); }})", connection.getName());
+                    " public Boolean call() throws Exception { return %s(%s); }})", connection.getName(), arguments);
         } else {
-            javaWriter.emitStatement("%s(payload)", connection.getName());
+            javaWriter.emitStatement("%s(%s)", connection.getName(), arguments);
         }
     }
 
     private void emitTransitionCall(Model model, ConnectionRef connection, JavaWriter javaWriter) throws IOException {
+        String arguments = connection.hasSignalPayloadAsFirstParameter() ? "payload" : "";
         if (connection.getRunOnMainThread()) {
-            javaWriter.beginControlFlow("if (callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {" +
-                    " return " + connection.getName() + "(payload); }}))");
-            javaWriter.emitStatement("return " + model.getStatesEnumName() + ".%s", connection.getTo());
-            javaWriter.endControlFlow();
+            if (connection.hasGuard()) {
+                javaWriter.beginControlFlow(
+                        "if (callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {" +
+                                " return " + connection.getName() + "(" + arguments + "); }}))");
+                javaWriter.emitStatement("return " + model.getStatesEnumName() + ".%s", connection.getTo());
+                javaWriter.endControlFlow();
+            } else {
+                javaWriter.emitStatement(
+                        "callConnectionOnMainThread(new Callable<Boolean>() { public Boolean call() throws Exception {" +
+                                connection.getName() + "(" + arguments + "); return true; }})");
+                javaWriter.emitStatement("return " + model.getStatesEnumName() + ".%s", connection.getTo());
+            }
         } else {
-            javaWriter.emitStatement("if(%s(payload)) return %s.%s", connection.getName(), model.getStatesEnumName(),connection.getTo());
+            if (connection.hasGuard()) {
+                javaWriter.emitStatement("if(%s(" + arguments + ")) return %s.%s", connection.getName(), model.getStatesEnumName(), connection.getTo());
+            } else {
+                javaWriter.emitStatement("%s(" + arguments + ")", connection.getName());
+                javaWriter.emitStatement("return %s.%s", model.getStatesEnumName(), connection.getTo());
+            }
         }
     }
 
@@ -500,6 +515,7 @@ final class StateMachineCreator {
         javaWriter.beginControlFlow("switch (state)");
 
         for (Map.Entry<String, ArrayList<ConnectionRef>> autoConnectionsForState : model.getAutoConnections().entrySet()) {
+
                 javaWriter.emitStatement("case %s: return callAutoConnectionsFor%s(payload)",
                         autoConnectionsForState.getKey(), autoConnectionsForState.getKey());
         }
