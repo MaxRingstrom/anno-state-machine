@@ -71,7 +71,9 @@ final public class StateMachineProcessor extends AbstractProcessor {
 
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
+        boolean hasStateMachineAnnotation = false;
         for (Element element : roundEnv.getElementsAnnotatedWith(StateMachine.class)) {
+            hasStateMachineAnnotation = true;
             try {
                 // Clean model for each state machine source file
                 mModel = new Model();
@@ -82,18 +84,18 @@ final public class StateMachineProcessor extends AbstractProcessor {
                     if (mModel.validateModel(element.getSimpleName().toString(), processingEnv.getMessager())) {
                         mStateMachineCreator.writeStateMachine(element, mModel, processingEnv);
                     } else {
-                        processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, mModel.getSourceClassName() + ": Invalid state machine - Not generating implementation.");
+                        mStateMachineCreator.writeStateMachineStub(element, mModel, processingEnv);
                     }
                 } else {
-                    processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                             "Non class using " + StateMachine.class.getSimpleName() + " annotation");
                 }
             } catch (Throwable t) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Throwable caught when creating state machine impl for " + element.getSimpleName());
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING, "Throwable caught when creating state machine impl for " + element.getSimpleName());
                 t.printStackTrace();
             }
         }
-        return true;
+        return hasStateMachineAnnotation;
     }
 
     private void generateModel(Element element) {
@@ -139,7 +141,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
     private void collectOnExit(Element element) {
         if (!(element.getKind() == ElementKind.METHOD)) {
             // OnExit annotation on something other than a method
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                     "Non method " + element.getSimpleName() + " using annotation " + OnExit.class.getSimpleName());
             return;
         }
@@ -151,7 +153,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
         try {
             mModel.add(connectionRef);
         } catch (IllegalArgumentException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                     mModel.getSourceClassName() + ": " + e.getMessage());
         }
     }
@@ -159,7 +161,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
     private void collectOnEnter(Element element) {
         if (!(element.getKind() == ElementKind.METHOD)) {
             // OnEnter annotation on something other than a method
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                     "Non method " + element.getSimpleName() + " using annotation " + OnEnter.class.getSimpleName());
             return;
         }
@@ -171,7 +173,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
         try {
             mModel.add(connectionRef);
         } catch (IllegalArgumentException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                     mModel.getSourceClassName() + ": " + e.getMessage());
         }
     }
@@ -179,7 +181,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
     private void collectStates(Element element) {
         if (!(element.getKind().equals(ElementKind.ENUM))) {
             // States annotation on something other than an enum
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                     "Non enum " + element.getSimpleName() + " of type " + element.getKind() + " using annotation " + States.class.getSimpleName());
             return;
         }
@@ -197,7 +199,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
     private void collectSignals(Element element) {
         if (!(element.getKind().equals(ElementKind.ENUM))) {
             // Signal annotation on something other than an enum
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                     "Non enum " + element.getSimpleName() + " of type " + element.getKind() + " using annotation " + Signals.class.getSimpleName());
             return;
         }
@@ -214,7 +216,7 @@ final public class StateMachineProcessor extends AbstractProcessor {
     private void collectConnection(Element element) {
         if (!(element.getKind() == ElementKind.METHOD)) {
             // Connection annotation on something other than a method
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.MANDATORY_WARNING,
                     "Non method " + element.getSimpleName() + " using annotation " + Connection.class.getSimpleName());
             return;
         }
