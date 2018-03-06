@@ -32,6 +32,7 @@ import com.jayway.annostatemachine.StateMachineEventListener;
 import com.jayway.annostatemachine.StateMachineFront;
 import com.jayway.annostatemachine.StateRef;
 import com.jayway.annostatemachine.annotations.StateMachine;
+import com.jayway.annostatemachine.annotations.IncompleteStateMachine;
 import com.jayway.annostatemachine.dispatchers.BackgroundQueueDispatcher;
 import com.jayway.annostatemachine.dispatchers.CallingThreadDispatcher;
 import com.jayway.annostatemachine.dispatchers.SharedBackgroundQueueDispatcher;
@@ -183,6 +184,15 @@ final class StateMachineCreator {
 
         javaWriter.emitStatement("return nextState");
 
+        javaWriter.endMethod();
+    }
+
+    private void generateSignalDispatcherStub(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod(model.getStatesEnumName(), "dispatchSignal", EnumSet.of(Modifier.PRIVATE),
+                "Enum", "signal", "final SignalPayload", "payload");
+
+        javaWriter.emitStatement("return null");
         javaWriter.endMethod();
     }
 
@@ -502,6 +512,14 @@ final class StateMachineCreator {
         javaWriter.endMethod();
     }
 
+    private void generateSwitchStateStubMethod(Model model, JavaWriter javaWriter) throws IOException {
+        javaWriter.emitEmptyLine();
+        javaWriter.beginMethod("void", "switchState", EnumSet.of(Modifier.PRIVATE), model.getStatesEnumName(), "nextState");
+        javaWriter.emitStatement("throw new IllegalStateException(\"State machine is a stub. Fix compilation warnings so that a full implementation can be generated\")");
+
+        javaWriter.endMethod();
+    }
+
     private void generateSignalHandlersForStates(Model model, JavaWriter javaWriter) throws IOException {
         for (StateRef stateRef : model.getStates()) {
             generateSignalHandler(stateRef, model, javaWriter);
@@ -671,4 +689,79 @@ final class StateMachineCreator {
                         "  }");
     }
 
+    public void writeStateMachineStub(Element element, Model model, ProcessingEnvironment processingEnv) {
+        JavaFileObject source;
+        try {
+            source = processingEnv.getFiler().createSourceFile(model.getTargetClassQualifiedName());
+            try (Writer writer = source.openWriter();
+                 JavaWriter javaWriter = new JavaWriter(writer)) {
+
+                javaWriter.emitPackage(model.getTargetPackage());
+                javaWriter.emitImports(model.getSourceQualifiedName(),
+                        SignalPayload.class.getCanonicalName(),
+                        NullEventListener.class.getCanonicalName(),
+                        StateMachineEventListener.class.getCanonicalName(),
+                        PayloadModifier.class.getCanonicalName(),
+                        SignalDispatcher.class.getCanonicalName(),
+                        DispatchCallback.class.getCanonicalName(),
+                        StateMachineLogger.class.getCanonicalName(),
+                        IncompleteStateMachine.class.getCanonicalName(),
+                        Config.class.getCanonicalName(),
+                        NoOpMainThreadPoster.class.getCanonicalName(),
+                        MainThreadPoster.class.getCanonicalName(),
+                        Callable.class.getCanonicalName(),
+                        CountDownLatch.class.getCanonicalName(),
+                        AtomicBoolean.class.getCanonicalName(),
+                        WeakReference.class.getCanonicalName(),
+                        StateMachineFront.class.getCanonicalName());
+
+                switch (model.getDispatchMode()) {
+                    case BACKGROUND_QUEUE:
+                        javaWriter.emitImports(BackgroundQueueDispatcher.class.getCanonicalName());
+                        break;
+                    case SHARED_BACKGROUND_QUEUE:
+                        javaWriter.emitImports(SharedBackgroundQueueDispatcher.class.getCanonicalName());
+                        break;
+                    case CALLING_THREAD:
+                        // Intentional fall-through
+                    default:
+                        javaWriter.emitImports(CallingThreadDispatcher.class.getCanonicalName());
+                }
+
+                javaWriter.emitEmptyLine();
+
+                generateClassJavaDoc(model, javaWriter);
+                javaWriter.emitAnnotation("IncompleteStateMachine");
+                javaWriter.beginType(model.getTargetClassName(), "class", EnumSet.of(Modifier.PUBLIC),
+                        model.getSourceClassName(), "StateMachineFront<" + model.getSourceClassName() + "." + model.getSignalsEnumName() + ">");
+
+                generateFieldDeclarations(model, javaWriter);
+
+                generatePassThroughConstructors(element, model, processingEnv.getMessager(), javaWriter);
+
+                generateInitMethods(model, javaWriter);
+
+                generateSignalDispatcherStub(model, javaWriter);
+                javaWriter.emitEmptyLine();
+
+                generateBlockingDispatchCallback(model, javaWriter);
+
+                generateSendMethods(model, javaWriter);
+                generateSwitchStateStubMethod(model, javaWriter);
+
+                generateShutdownMethod(javaWriter);
+
+                // End class
+                javaWriter.emitEmptyLine();
+                javaWriter.endType();
+
+                writer.close();
+            }
+        } catch (IOException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Couldn't create generated state machine class stub: " + model.getTargetClassName());
+            e.printStackTrace();
+        }
+
+    }
 }

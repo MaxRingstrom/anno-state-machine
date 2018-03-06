@@ -438,17 +438,17 @@ class Model {
                 for (ConnectionRef connectionRef : entry.getValue()) {
                     if (!mStates.contains(nameToStateMap.get(connectionRef.getFrom()))) {
                         isValid = false;
-                        messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown FROM state "
+                        messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown FROM state "
                                 + connectionRef.getFrom() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
                     if (!connectionRef.getTo().equals(ConnectionRef.WILDCARD) && !mStates.contains(nameToStateMap.get(connectionRef.getTo()))) {
                         isValid = false;
-                        messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown TO state "
+                        messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown TO state "
                                 + connectionRef.getTo() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
                     if (!mSignals.contains(new SignalRef(connectionRef.getSignal()))) {
                         isValid = false;
-                        messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown SIGNAL "
+                        messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown SIGNAL "
                                 + connectionRef.getSignal() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
                 }
@@ -458,7 +458,7 @@ class Model {
         for (Map.Entry<String, OnEnterRef> entry : mOnEnterCallbacks.entrySet()) {
             if (!mStates.contains(nameToStateMap.get(entry.getKey()))) {
                 isValid = false;
-                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown STATE "
+                messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown STATE "
                         + entry.getKey() + " used in OnEnter " + entry.getValue().getConnectionName() + ". Do you have a typo?");
             }
         }
@@ -466,7 +466,7 @@ class Model {
         for (Map.Entry<String, OnEnterRef> entry : mOnEnterCallbacks.entrySet()) {
             if (!mStates.contains(nameToStateMap.get(entry.getKey()))) {
                 isValid = false;
-                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown STATE "
+                messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown STATE "
                         + entry.getKey() + " used in OnExit " + entry.getValue().getConnectionName() + ". Do you have a typo?");
             }
         }
@@ -478,12 +478,12 @@ class Model {
         for (ConnectionRef autoConnection : allAutoConnections) {
             if (!mStates.contains(nameToStateMap.get(autoConnection.getFrom()))) {
                 isValid = false;
-                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown from STATE "
+                messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown from STATE "
                         + autoConnection.getFrom() + " used in auto connection " + autoConnection.getName() + ". Do you have a typo?");
             }
             if (!mStates.contains(nameToStateMap.get(autoConnection.getTo()))) {
                 isValid = false;
-                messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Unknown to STATE "
+                messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown to STATE "
                         + autoConnection.getTo() + " used in auto connection " + autoConnection.getName() + ". Do you have a typo?");
             }
         }
@@ -492,7 +492,7 @@ class Model {
 
     private boolean checkStatesDefined(String errorTag, Messager messager) {
         if (mSignalsEnumName == null || mSignalsEnumName.length() == 0) {
-            messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Couldn't find an enum with the annotation @Signals");
+            messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Couldn't find an enum with the annotation @Signals");
             return false;
         }
         return true;
@@ -500,7 +500,7 @@ class Model {
 
     private boolean checkSignalsDefined(String errorTag, Messager messager) {
         if (mSignalsEnumName == null || mSignalsEnumName.length() == 0) {
-            messager.printMessage(Diagnostic.Kind.ERROR, errorTag + " - Couldn't find an enum with the annotation @Signals");
+            messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Couldn't find an enum with the annotation @Signals");
             return false;
         }
         return true;
