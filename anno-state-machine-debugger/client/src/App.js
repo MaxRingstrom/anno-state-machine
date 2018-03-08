@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import VisWidget from './visualization/VisWidget/';
 import logo from './logo.svg';
 import './App.css';
 
@@ -30,6 +31,7 @@ class App extends Component {
           <img src={logo} className="App-logo" alt="logo" />
           <h1 className="App-title">Anno State Machine Debugger</h1>
         </header>
+        <div><VisWidget/></div>
         <div className="App-BuildInfo"><p>Backend version: {this.state.version}</p></div>
       </div>
     );

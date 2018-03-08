@@ -29,6 +29,7 @@ public class ModelJsonExporter {
         final int globalStateId = 0;
 
         int stateId = 1; // 0 is reserved for the GLOBAL state
+        int edgeId = 0;
         HashMap<String, Integer> stateIdMap = new HashMap<>();
 
         node = new Node();
@@ -49,6 +50,7 @@ public class ModelJsonExporter {
         for (ArrayList<ConnectionRef> transitionsForState : model.getLocalSignalTransitions().values()) {
             for (ConnectionRef connection : transitionsForState) {
                 edge = new Edge();
+                edge.id = edgeId++;
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
@@ -61,6 +63,7 @@ public class ModelJsonExporter {
         for (ArrayList<ConnectionRef> autoTransitionsForState : model.getAutoConnections().values()) {
             for (ConnectionRef connection : autoTransitionsForState) {
                 edge = new Edge();
+                edge.id = edgeId++;
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
@@ -79,6 +82,7 @@ public class ModelJsonExporter {
             }
             for (ConnectionRef connection : connections) {
                 edge = new Edge();
+                edge.id = edgeId++;
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
@@ -93,6 +97,7 @@ public class ModelJsonExporter {
         for (ArrayList<ConnectionRef> transitions : globalSignalTransitions) {
             for (ConnectionRef connection : transitions) {
                 edge = new Edge();
+                edge.id = edgeId++;
                 edge.from = globalStateId;
                 edge.to = stateIdMap.get(connection.getTo());
                 edge.label = connection.getSignal() + " (" + connection.getName() + ")";
@@ -106,6 +111,7 @@ public class ModelJsonExporter {
         ArrayList<ConnectionRef> globalAnySignalTransitions = model.getGlobalAnySignalTransitions();
         for (ConnectionRef connection : globalAnySignalTransitions) {
             edge = new Edge();
+            edge.id = edgeId++;
             edge.from = globalStateId;
             edge.to = stateIdMap.get(connection.getTo());
             edge.label = connection.getSignal() + " (" + connection.getName() + ")";
@@ -134,5 +140,6 @@ public class ModelJsonExporter {
         String arrows; // "to", "from"
         String label;
         String color; // #ff0000 = red
+        int id;
     }
 }

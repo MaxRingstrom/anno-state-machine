@@ -1,0 +1,12 @@
+.Vis-Graph {
+    width:100%;
+    height:600px
+}
+
+.Vis-Graph-StateInfo {
+    position:fixed;
+    top:100px;
+    right:0;
+    width:20%;
+    height:300px;
+}
