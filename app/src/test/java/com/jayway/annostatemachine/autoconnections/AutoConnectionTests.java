@@ -66,9 +66,8 @@ public class AutoConnectionTests {
         }
 
         @Connection(from = "Init", to = "Started", on="!")
-        public boolean onAutoInit(SignalPayload payload) {
+        public void onAutoInit(SignalPayload payload) {
             System.out.println("Called");
-            return true;
         }
 
         @Connection(from = "Started", to = "Next", on="!")
