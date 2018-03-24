@@ -12,6 +12,8 @@ class VisWidget extends Component {
     console.log(graph);
     this.state = {
       graph: graph,
+      selectedState : {label : "No selection"},
+      selectedEdges : [],
       options: {
         physics: {
           forceAtlas2Based: {
@@ -61,12 +63,16 @@ class VisWidget extends Component {
 
         if (nodes.length === 1) {
             console.log(this.state.graph.nodes[nodes[0]]);
+            this.setState({selectedState : this.state.graph.nodes[nodes[0]]});
         }
 
         if (edges.length >= 0) {
             var that = this;
+            this.setState({selectedEdges : edges});
+            var connections = new Array();
             edges.forEach(function(edgeId) {
                 console.log(that.state.graph.edges[edgeId]);
+                connections.push(that.state.graph.edges[edgeId]);
             });
         }
     },
@@ -74,7 +80,7 @@ class VisWidget extends Component {
         console.log("stabilizationIterationsDone");
         this.setState({options: {
             physics: { enabled : false },
-        edges :{smooth : {type:"continuous"}}}});
+        edges :{smooth : {type:"dynamic"}}}});
     }
   }
 
@@ -86,7 +92,49 @@ class VisWidget extends Component {
       }
       if (newGraph) {
         console.log(newGraph);
-        this.setState({graph: newGraph});
+        this.setState({graph:{nodes:[], edges:[]}})
+        this.setState( {
+            graph: newGraph,
+            options: {
+              physics: {
+                  enabled:false,
+                forceAtlas2Based: {
+                  gravitationalConstant: -26,
+                  centralGravity: 0.005,
+                  springLength: 230,
+                  springConstant: 0.18,
+                  avoidOverlap: 1.5
+                },
+                maxVelocity: 146,
+                solver: "forceAtlas2Based",
+                timestep: 0.35,
+                stabilization: {
+                  enabled: true,
+                  iterations: 1000,
+                  updateInterval: 25
+                }
+              },
+      
+              edges: {
+                font: {
+                  color: "#343434",
+                  size: 11, // px
+                  face: "arial",
+                  background: "none",
+                  strokeWidth: 5, // px
+                  strokeColor: "#ffffff",
+                  align: "top"
+                },
+                smooth: {
+                  enabled: true, //setting to true enables curved lines
+                  type: "dynamic",
+                  "forceDirection": "none",
+                  roundness: 0.75
+                }
+              }
+            },
+            graphConstructCount : 0
+          });
       }
   }
 
@@ -96,7 +144,7 @@ class VisWidget extends Component {
         <input type="text" onChange={this.handleModelInputChanged.bind(this)} />
         <Graph graph={this.state.graph} graphConstructCount={this.state.graphConstructCount} options={this.state.options} events={this.events}/>
         <div className="Vis-Graph-StateInfo">
-        <StateInformationWidget/>
+        <StateInformationWidget state={this.state.selectedState} connections={this.state.selectedEdges}/>
         </div>
       </div>
     );
