@@ -550,10 +550,16 @@ final class StateMachineCreator {
             javaWriter.emitEmptyLine();
             javaWriter.beginMethod(model.getStatesEnumName(), "callAutoConnectionsFor" + entry.getKey(),
                     EnumSet.of(Modifier.PRIVATE), "SignalPayload<" + model.getSignalsEnumName() + ">", "payload");
+            boolean foundGuardlessAutoConnection = false;
             for (ConnectionRef connection : entry.getValue()) {
+                if (!connection.hasGuard()) {
+                    foundGuardlessAutoConnection = true;
+                }
                 emitTransitionCall(model, connection, javaWriter);
             }
-            javaWriter.emitStatement("return null");
+            if (!foundGuardlessAutoConnection) {
+                javaWriter.emitStatement("return null");
+            }
             javaWriter.endMethod();
         }
     }
