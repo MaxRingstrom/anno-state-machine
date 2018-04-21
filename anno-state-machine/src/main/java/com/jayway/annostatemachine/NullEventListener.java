@@ -26,4 +26,9 @@ public class NullEventListener implements StateMachineEventListener {
     public void onChangingState(Object currentState, Object nextState) {
 
     }
+
+    @Override
+    public void onThrowable(Throwable t) {
+
+    }
 }

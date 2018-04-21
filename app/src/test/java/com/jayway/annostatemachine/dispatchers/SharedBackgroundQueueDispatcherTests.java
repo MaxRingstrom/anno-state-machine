@@ -68,6 +68,11 @@ public class SharedBackgroundQueueDispatcherTests {
             public void onChangingState(Object o, Object o1) {
                 System.out.println("1: State switch " + o + " to " + o1);
             }
+
+            @Override
+            public void onThrowable(Throwable t) {
+
+            }
         };
 
         StateMachineEventListener eventListener2 = new StateMachineEventListener() {
@@ -79,6 +84,11 @@ public class SharedBackgroundQueueDispatcherTests {
             @Override
             public void onChangingState(Object o, Object o1) {
                 System.out.println("2: State switch " + o + " to " + o1);
+            }
+
+            @Override
+            public void onThrowable(Throwable t) {
+
             }
         };
 
