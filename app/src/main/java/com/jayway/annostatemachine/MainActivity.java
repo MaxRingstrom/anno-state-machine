@@ -64,6 +64,14 @@ public class MainActivity extends AppCompatActivity {
             public void onChangingState(Object o, Object o1) {
                 Log.d(TAG, "State switch from [" + o + "] to [" + o1 + "]");
             }
+
+            @Override
+            public void onThrowable(Throwable t) {
+                Log.e(TAG, "Error", t);
+                if (t instanceof RuntimeException) {
+                    throw ((RuntimeException)t);
+                }
+            }
         }, new AndroidMainThreadPoster(this));
 
         onCheckedChanged((CheckBox) findViewById(R.id.checkbox),
