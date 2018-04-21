@@ -95,7 +95,7 @@ final class StateMachineCreator {
         javaWriter.emitField(StateMachineEventListener.class.getSimpleName(), "mEventListener", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(SignalDispatcher.class.getSimpleName(), "mSignalDispatcher", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(DispatchCallback.class.getSimpleName(), "mDispatchCallback", EnumSet.of(Modifier.PRIVATE));
-        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE), "Config.get().getLogger()");
+        javaWriter.emitField(StateMachineLogger.class.getSimpleName(), "mLogger", EnumSet.of(Modifier.PRIVATE));
         javaWriter.emitField(MainThreadPoster.class.getSimpleName(), "mMainThreadPoster", EnumSet.of(Modifier.PRIVATE), "new NoOpMainThreadPoster()");
         javaWriter.emitField(AtomicBoolean.class.getSimpleName(), "mIsShutdown", EnumSet.of(Modifier.PRIVATE), "new AtomicBoolean(false)");
         javaWriter.emitField("int", "mSharedId");
@@ -484,6 +484,12 @@ final class StateMachineCreator {
         javaWriter.endControlFlow();
         javaWriter.nextControlFlow("catch (Throwable t)");
         javaWriter.emitStatement("mLogger.e(\"%s\", \"Error when dispatching signal\", t)", model.getTargetClassName());
+
+        javaWriter.emitStatement(model.getTargetClassName() + " machine = mStateMachineRef.get()");
+        javaWriter.beginControlFlow("if (machine != null && !machine.mIsShutdown.get())");
+        javaWriter.emitStatement(" machine.mEventListener.onThrowable(t)");
+        javaWriter.endControlFlow();
+
         javaWriter.endControlFlow();
         javaWriter.endMethod();
 
@@ -622,7 +628,7 @@ final class StateMachineCreator {
     private void generateInitMethods(Model model, JavaWriter javaWriter) throws IOException {
         javaWriter.emitEmptyLine();
         javaWriter.beginMethod("void", "init", EnumSet.of(Modifier.PUBLIC), model.getStatesEnumName(), "startingState", StateMachineEventListener.class.getSimpleName(), "eventListener", MainThreadPoster.class.getSimpleName(), "mainThreadPoster");
-
+        javaWriter.emitStatement("mLogger = Config.get().getLogger()");
         javaWriter.emitStatement("mMainThreadPoster = mainThreadPoster != null ? mainThreadPoster : new NoOpMainThreadPoster()");
         javaWriter.emitStatement("mDispatchCallback = new MachineCallback(this, mLogger)");
         javaWriter.emitStatement("mSharedId = " + model.getDispatchQueueId());

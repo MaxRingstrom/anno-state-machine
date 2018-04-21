@@ -19,4 +19,5 @@ package com.jayway.annostatemachine;
 public interface StateMachineEventListener {
     void onDispatchingSignal(Object currentState, Object signal);
     void onChangingState(Object currentState, Object nextState);
+    void onThrowable(Throwable t);
 }
