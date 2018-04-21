@@ -16,12 +16,15 @@
 
 package com.jayway.annostatemachine;
 
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+
 public class ConnectionRef {
 
     public static final String WILDCARD = "*";
     public static final String AUTO = "!";
 
-    private final int mIndexOfSignalPayloadParam;
+    private final LinkedList<ParameterRef> mParameters;
     private final String mName;
     private final String mFrom;
     private final String mTo;
@@ -47,14 +50,14 @@ public class ConnectionRef {
 
     public boolean hasGuard() { return mHasGuard; }
 
-    public ConnectionRef(String name, String from, String to, String signal, boolean runOnMainThread, boolean hasGuard, int indexOfSignalPayloadParam) {
+    public ConnectionRef(String name, String from, String to, String signal, boolean runOnMainThread, boolean hasGuard, LinkedList<ParameterRef> parameters) {
         mName = name;
         mFrom = from;
         mTo = to;
         mSignal = signal;
         mRunOnMainThread = runOnMainThread;
         mHasGuard = hasGuard;
-        mIndexOfSignalPayloadParam = indexOfSignalPayloadParam;
+        mParameters = parameters;
     }
 
     @Override
@@ -66,7 +69,11 @@ public class ConnectionRef {
         return mRunOnMainThread;
     }
 
+    public LinkedList<ParameterRef> getParameters() {
+        return mParameters;
+    }
+
     public boolean hasSignalPayloadAsFirstParameter() {
-        return mIndexOfSignalPayloadParam == 0;
+        return mParameters.size() > 0 && mParameters.get(0).getType().equals(SignalPayload.class.getName());
     }
 }
