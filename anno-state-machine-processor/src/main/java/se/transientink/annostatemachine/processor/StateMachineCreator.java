@@ -25,6 +25,7 @@ import com.jayway.annostatemachine.NoOpMainThreadPoster;
 import com.jayway.annostatemachine.NullEventListener;
 import com.jayway.annostatemachine.OnEnterRef;
 import com.jayway.annostatemachine.OnExitRef;
+import com.jayway.annostatemachine.ParameterRef;
 import com.jayway.annostatemachine.PayloadModifier;
 import com.jayway.annostatemachine.SignalDispatcher;
 import com.jayway.annostatemachine.SignalPayload;
@@ -45,6 +46,7 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -66,6 +68,8 @@ import javax.tools.JavaFileObject;
  * Creates a java file with the state machine implementation.
  */
 final class StateMachineCreator {
+
+    public static final String ARG_PREFIX = "arg_";
 
     /**
      * Emits a block of code that calls the provided transition connection methods in order until
@@ -386,7 +390,10 @@ final class StateMachineCreator {
     }
 
     private void emitSpyCall(ConnectionRef connection, JavaWriter javaWriter) throws IOException {
-        String arguments = connection.hasSignalPayloadAsFirstParameter() ? "payload" : "";
+
+        emitParametersFromPayload(connection, javaWriter);
+        String arguments = generateArguments(connection);
+
         if (connection.getRunOnMainThread()) {
             javaWriter.emitStatement("callConnectionOnMainThread(new Callable<Boolean>() {" +
                     " public Boolean call() throws Exception { return %s(%s); }})", connection.getName(), arguments);
@@ -396,7 +403,9 @@ final class StateMachineCreator {
     }
 
     private void emitTransitionCall(Model model, ConnectionRef connection, JavaWriter javaWriter) throws IOException {
-        String arguments = connection.hasSignalPayloadAsFirstParameter() ? "payload" : "";
+        emitParametersFromPayload(connection, javaWriter);
+        String arguments = generateArguments(connection);
+
         if (connection.getRunOnMainThread()) {
             if (connection.hasGuard()) {
                 javaWriter.beginControlFlow(
@@ -416,6 +425,75 @@ final class StateMachineCreator {
             } else {
                 javaWriter.emitStatement("%s(" + arguments + ")", connection.getName());
                 javaWriter.emitStatement("return %s.%s", model.getStatesEnumName(), connection.getTo());
+            }
+        }
+    }
+
+    private String generateArguments(ConnectionRef connection) {
+        StringBuilder sb =  new StringBuilder();
+        LinkedList<ParameterRef> params = connection.getParameters();
+        int index = 0;
+        for (ParameterRef param : params) {
+            // Using startsWith here to deal with generics
+            if (param.getType().startsWith(SignalPayload.class.getName())) {
+                sb.append("payload");
+            } else {
+                sb.append(ARG_PREFIX).append(param.getName()).append("_").append(connection.getName());
+            }
+            if (index < params.size() - 1) {
+                sb.append(", ");
+            }
+            index++;
+        }
+
+        return sb.toString();
+    }
+
+    private void emitParametersFromPayload(ConnectionRef connection, JavaWriter javaWriter) throws IOException {
+
+        SignalPayload p = new SignalPayload();
+        LinkedList<ParameterRef> parameters = connection.getParameters();
+        String getterMethodName;
+        String defaultValue;
+        boolean needsCast = false;
+        for (ParameterRef param : parameters) {
+            if (!param.getName().equals("payload") && !param.getName().equals("signal")) {
+                switch (param.getType()) {
+                    case "boolean":
+                        getterMethodName = "getBoolean";
+                        defaultValue = "false";
+                        break;
+                    case "java.lang.String":
+                        getterMethodName = "getString";
+                        defaultValue = "\"\"";
+                        break;
+                    case "int":
+                        getterMethodName = "getInt";
+                        defaultValue = "Integer.MIN_VALUE";
+                        break;
+                    default:
+                        getterMethodName = "getObject";
+                        defaultValue = "null";
+                        needsCast = true;
+                        break;
+                }
+                if (needsCast) {
+                    // Declaration
+                    javaWriter.emitStatement("%s %s%s_%s",
+                        param.getType(), ARG_PREFIX, param.getName(), connection.getName());
+
+                    // Assignment
+                    javaWriter.beginControlFlow("try");
+                    javaWriter.emitStatement("%s%s_%s = (%s) payload.%s( \"%s\", %s )",
+                        ARG_PREFIX, param.getName(), connection.getName(), param.getType(), getterMethodName, param.getName(), defaultValue);
+                    javaWriter.endControlFlow();
+                    javaWriter.beginControlFlow("catch(ClassCastException e)");
+                    javaWriter.emitStatement("throw new IllegalArgumentException(\"Not handling connection - Wrong type found in signal payload for parameter '%s' in connection '%s'. Expected: %s\")", param.getName(), connection.getName(), param.getType());
+                    javaWriter.endControlFlow();
+                } else {
+                    javaWriter.emitStatement("%s %s%s_%s = payload.%s( \"%s\", %s )",
+                        param.getType(), ARG_PREFIX, param.getName(), connection.getName(), getterMethodName, param.getName(), defaultValue);
+                }
             }
         }
     }

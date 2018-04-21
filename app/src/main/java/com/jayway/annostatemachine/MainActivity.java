@@ -135,8 +135,8 @@ public class MainActivity extends AppCompatActivity {
 
         // Safe check from states
         @Connection(from = "UpAndRunning", to = "Done", on = "CheckBoxCheckStateChanged", runOnMainThread = true)
-        public boolean onUserReadyToContinue(SignalPayload payload) {
-            if (!payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
+        public boolean onUserReadyToContinue(boolean checkbox_checked) {
+            if (!checkbox_checked) {
                 // We only continue if the check box is checked
                 return false;
             }
@@ -145,8 +145,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Connection(from = "Done", to = "UpAndRunning", on = "CheckBoxCheckStateChanged", runOnMainThread = true)
-        public boolean onUserNoLongerReadyToContinue(SignalPayload payload) {
-            if (payload.getBoolean(KEY_CHECKBOX_CHECKED, false)) {
+        public boolean onUserNoLongerReadyToContinue(boolean checkbox_checked) {
+            if (checkbox_checked) {
                 // We only continue if the check box is unchecked
                 return false;
             }
