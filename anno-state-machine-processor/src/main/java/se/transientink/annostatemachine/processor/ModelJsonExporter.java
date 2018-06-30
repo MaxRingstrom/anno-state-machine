@@ -46,8 +46,12 @@ public class ModelJsonExporter {
             rep.nodes.add(node);
         }
 
+        ArrayList<String> exportedConnections = new ArrayList<>();
         for (ArrayList<ConnectionRef> transitionsForState : model.getLocalSignalTransitions().values()) {
             for (ConnectionRef connection : transitionsForState) {
+                if (exportedConnections.contains(connection.getName())) {
+                    continue;
+                }
                 edge = new Edge();
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
@@ -55,11 +59,16 @@ public class ModelJsonExporter {
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
+                exportedConnections.add(connection.getName());
             }
         }
 
+        exportedConnections.clear();
         for (ArrayList<ConnectionRef> autoTransitionsForState : model.getAutoConnections().values()) {
             for (ConnectionRef connection : autoTransitionsForState) {
+                if (exportedConnections.contains(connection.getName())) {
+                    continue;
+                }
                 edge = new Edge();
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
@@ -67,10 +76,12 @@ public class ModelJsonExporter {
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
+                exportedConnections.add(connection.getName());
             }
         }
 
         // Local any signal transitions
+        exportedConnections.clear();
         ArrayList<ConnectionRef> connections;
         for (StateRef state : model.getStates()) {
             connections = model.getAnySignalTransitionsForState(state);
@@ -78,6 +89,9 @@ public class ModelJsonExporter {
                 continue;
             }
             for (ConnectionRef connection : connections) {
+                if (exportedConnections.contains(connection.getName())) {
+                    continue;
+                }
                 edge = new Edge();
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
@@ -85,13 +99,18 @@ public class ModelJsonExporter {
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
+                exportedConnections.add(connection.getName());
             }
         }
 
         // Global signal transitions
+        exportedConnections.clear();
         Collection<ArrayList<ConnectionRef>> globalSignalTransitions = model.getGlobalSignalTransitionsPerSignal().values();
         for (ArrayList<ConnectionRef> transitions : globalSignalTransitions) {
             for (ConnectionRef connection : transitions) {
+                if (exportedConnections.contains(connection.getName())) {
+                    continue;
+                }
                 edge = new Edge();
                 edge.from = globalStateId;
                 edge.to = stateIdMap.get(connection.getTo());
@@ -99,12 +118,17 @@ public class ModelJsonExporter {
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
+                exportedConnections.add(connection.getName());
             }
         }
 
         // Global any signal transitions
+        exportedConnections.clear();
         ArrayList<ConnectionRef> globalAnySignalTransitions = model.getGlobalAnySignalTransitions();
         for (ConnectionRef connection : globalAnySignalTransitions) {
+            if (exportedConnections.contains(connection.getName())) {
+                continue;
+            }
             edge = new Edge();
             edge.from = globalStateId;
             edge.to = stateIdMap.get(connection.getTo());
@@ -112,6 +136,7 @@ public class ModelJsonExporter {
             edge.arrows = "to";
             edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
             rep.edges.add(edge);
+            exportedConnections.add(connection.getName());
         }
 
         return gson.toJson(rep);
