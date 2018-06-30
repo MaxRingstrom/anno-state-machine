@@ -341,7 +341,9 @@ class Model {
                 if (connections == null) {
                     connections = new ArrayList<>();
                 }
-                connections.add(globalSpecificConnection);
+                if (!connections.contains(globalSpecificConnection)) {
+                    connections.add(globalSpecificConnection);
+                }
 
                 mGlobalSignalTransitionsPerSignal.put(signal, connections);
             }
@@ -364,7 +366,9 @@ class Model {
                     if (connections == null) {
                         connections = new ArrayList<>();
                     }
-                    connections.add(connection);
+                    if (!connections.contains(connection)) {
+                        connections.add(connection);
+                    }
                     spiesPerSignalInState.put(signal, connections);
                 }
             }
@@ -380,7 +384,9 @@ class Model {
                 if (connections == null) {
                     connections = new ArrayList<>();
                 }
-                connections.add(globalSpecificSpy);
+                if (!connections.contains(globalSpecificSpy)) {
+                    connections.add(globalSpecificSpy);
+                }
                 mGlobalSignalSpiesPerSignal.put(signal, connections);
             }
         }
@@ -402,7 +408,10 @@ class Model {
                     if (connections == null) {
                         connections = new ArrayList<>();
                     }
-                    connections.add(connection);
+
+                    if (!connections.contains(connection)) {
+                        connections.add(connection);
+                    }
                     connectionsPerSignalInState.put(signal, connections);
                 }
             }

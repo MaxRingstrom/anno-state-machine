@@ -90,4 +90,15 @@ public class ConnectionRef {
     public LinkedList<ParameterRef> getParameters() {
         return mParameters;
     }
+
+    @Override
+    public int hashCode() {
+        return mName.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof ConnectionRef && mName.equals(((ConnectionRef) o).getName());
+
+    }
 }
