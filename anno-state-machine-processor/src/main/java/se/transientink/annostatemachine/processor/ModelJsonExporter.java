@@ -51,7 +51,7 @@ public class ModelJsonExporter {
                 edge = new Edge();
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
-                edge.label = connection.getSignal() + " (" + connection.getName() + ")";
+                edge.label = connection.getSignalsAsString() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
@@ -63,7 +63,7 @@ public class ModelJsonExporter {
                 edge = new Edge();
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
-                edge.label = connection.getSignal() + " (" + connection.getName() + ")";
+                edge.label = connection.getSignalsAsString() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
@@ -81,7 +81,7 @@ public class ModelJsonExporter {
                 edge = new Edge();
                 edge.from = stateIdMap.get(connection.getFrom());
                 edge.to = stateIdMap.get(connection.getTo());
-                edge.label = connection.getSignal() + " (" + connection.getName() + ")";
+                edge.label = connection.getSignalsAsString() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
@@ -95,7 +95,7 @@ public class ModelJsonExporter {
                 edge = new Edge();
                 edge.from = globalStateId;
                 edge.to = stateIdMap.get(connection.getTo());
-                edge.label = connection.getSignal() + " (" + connection.getName() + ")";
+                edge.label = connection.getSignalsAsString() + " (" + connection.getName() + ")";
                 edge.arrows = "to";
                 edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
                 rep.edges.add(edge);
@@ -108,7 +108,7 @@ public class ModelJsonExporter {
             edge = new Edge();
             edge.from = globalStateId;
             edge.to = stateIdMap.get(connection.getTo());
-            edge.label = connection.getSignal() + " (" + connection.getName() + ")";
+            edge.label = connection.getSignalsAsString() + " (" + connection.getName() + ")";
             edge.arrows = "to";
             edge.color = connection.hasGuard() ? GUARD_COLOR : NO_GUARD_COLOR;
             rep.edges.add(edge);
