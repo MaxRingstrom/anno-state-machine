@@ -16,8 +16,11 @@
 
 package com.jayway.annostatemachine;
 
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
+import java.util.List;
 
 public class ConnectionRef {
 
@@ -28,9 +31,10 @@ public class ConnectionRef {
     private final String mName;
     private final String mFrom;
     private final String mTo;
-    private final String mSignal;
+    private final List<String> mSignals;
     private final boolean mRunOnMainThread;
     private final boolean mHasGuard;
+    private final String mSignalsAsString;
 
     public String getName() {
         return mName;
@@ -44,25 +48,39 @@ public class ConnectionRef {
         return mTo;
     }
 
-    public String getSignal() {
-        return mSignal;
+    public List<String> getSignals() {
+        return mSignals;
+    }
+
+    public String getSignalsAsString() {
+        return mSignalsAsString;
     }
 
     public boolean hasGuard() { return mHasGuard; }
 
-    public ConnectionRef(String name, String from, String to, String signal, boolean runOnMainThread, boolean hasGuard, LinkedList<ParameterRef> parameters) {
+    public ConnectionRef(String name, String from, String to, String signals, boolean runOnMainThread, boolean hasGuard, LinkedList<ParameterRef> parameters) {
         mName = name;
         mFrom = from;
         mTo = to;
-        mSignal = signal;
+        mSignalsAsString = signals;
+        mSignals = collectSignals(signals);
         mRunOnMainThread = runOnMainThread;
         mHasGuard = hasGuard;
         mParameters = parameters;
     }
 
+    private List<String> collectSignals(String signals) {
+        ArrayList<String> signalsList = new ArrayList<>();
+        String[] signalSplits = signals.split(",");
+        for (String unTrimmedSignalString : signalSplits) {
+            signalsList.add(unTrimmedSignalString.trim());
+        }
+        return signalsList;
+    }
+
     @Override
     public String toString() {
-        return mName + ": " + mFrom + " --" + mSignal + "--> " + mTo + (mHasGuard ? " has guard" : "");
+        return mName + ": " + mFrom + " --" + mSignals + "--> " + mTo + (mHasGuard ? " has guard" : "");
     }
 
     public boolean getRunOnMainThread() {
@@ -71,9 +89,5 @@ public class ConnectionRef {
 
     public LinkedList<ParameterRef> getParameters() {
         return mParameters;
-    }
-
-    public boolean hasSignalPayloadAsFirstParameter() {
-        return mParameters.size() > 0 && mParameters.get(0).getType().equals(SignalPayload.class.getName());
     }
 }
