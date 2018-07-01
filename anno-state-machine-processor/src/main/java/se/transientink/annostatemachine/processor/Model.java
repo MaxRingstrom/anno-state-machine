@@ -92,8 +92,8 @@ class Model {
 
         boolean hasWildcardFrom = ConnectionRef.WILDCARD.equals(connection.getFrom());
         boolean hasWildcardTo = ConnectionRef.WILDCARD.equals(connection.getTo());
-        boolean hasWildcardSignal = ConnectionRef.WILDCARD.equals(connection.getSignal());
-        boolean isAutoSignal = ConnectionRef.AUTO.equals(connection.getSignal());
+        boolean hasWildcardSignal = ConnectionRef.WILDCARD.equals(connection.getSignalsAsString());
+        boolean isAutoSignal = ConnectionRef.AUTO.equals(connection.getSignalsAsString());
 
         if (isAutoSignal) {
             if (hasWildcardFrom || hasWildcardTo) {
@@ -336,13 +336,17 @@ class Model {
 
     private void aggregateGlobalSignalTransitionsPerSignal() {
         for (ConnectionRef globalSpecificConnection : mGlobalSignalTransitions) {
-            ArrayList<ConnectionRef> connections =
-                    mGlobalSignalTransitionsPerSignal.get(globalSpecificConnection.getSignal());
-            if (connections == null) {
-                connections = new ArrayList<>();
+            for (String signal : globalSpecificConnection.getSignals()) {
+                ArrayList<ConnectionRef> connections = mGlobalSignalTransitionsPerSignal.get(signal);
+                if (connections == null) {
+                    connections = new ArrayList<>();
+                }
+                if (!connections.contains(globalSpecificConnection)) {
+                    connections.add(globalSpecificConnection);
+                }
+
+                mGlobalSignalTransitionsPerSignal.put(signal, connections);
             }
-            connections.add(globalSpecificConnection);
-            mGlobalSignalTransitionsPerSignal.put(globalSpecificConnection.getSignal(), connections);
         }
     }
 
@@ -357,12 +361,16 @@ class Model {
 
             // Group the connections for the state by signal
             for (ConnectionRef connection : spiesForState) {
-                ArrayList<ConnectionRef> connections = spiesPerSignalInState.get(connection.getSignal());
-                if (connections == null) {
-                    connections = new ArrayList<>();
+                for (String signal : connection.getSignals()) {
+                    ArrayList<ConnectionRef> connections = spiesPerSignalInState.get(signal);
+                    if (connections == null) {
+                        connections = new ArrayList<>();
+                    }
+                    if (!connections.contains(connection)) {
+                        connections.add(connection);
+                    }
+                    spiesPerSignalInState.put(signal, connections);
                 }
-                connections.add(connection);
-                spiesPerSignalInState.put(connection.getSignal(), connections);
             }
             mLocalSignalSpiesPerSignalPerState.put(stateName, spiesPerSignalInState);
         }
@@ -370,13 +378,17 @@ class Model {
 
     private void aggregateGlobalSpiesPerSignal() {
         for (ConnectionRef globalSpecificSpy : mGlobalSignalSpies) {
-            ArrayList<ConnectionRef> connections =
-                    mGlobalSignalSpiesPerSignal.get(globalSpecificSpy.getSignal());
-            if (connections == null) {
-                connections = new ArrayList<>();
+            for (String signal : globalSpecificSpy.getSignals()) {
+                ArrayList<ConnectionRef> connections =
+                    mGlobalSignalSpiesPerSignal.get(signal);
+                if (connections == null) {
+                    connections = new ArrayList<>();
+                }
+                if (!connections.contains(globalSpecificSpy)) {
+                    connections.add(globalSpecificSpy);
+                }
+                mGlobalSignalSpiesPerSignal.put(signal, connections);
             }
-            connections.add(globalSpecificSpy);
-            mGlobalSignalSpiesPerSignal.put(globalSpecificSpy.getSignal(), connections);
         }
     }
 
@@ -391,12 +403,17 @@ class Model {
 
             // Group the connections for the state by signal
             for (ConnectionRef connection : connectionsForState) {
-                ArrayList<ConnectionRef> connections = connectionsPerSignalInState.get(connection.getSignal());
-                if (connections == null) {
-                    connections = new ArrayList<>();
+                for (String signal : connection.getSignals()) {
+                    ArrayList<ConnectionRef> connections = connectionsPerSignalInState.get(signal);
+                    if (connections == null) {
+                        connections = new ArrayList<>();
+                    }
+
+                    if (!connections.contains(connection)) {
+                        connections.add(connection);
+                    }
+                    connectionsPerSignalInState.put(signal, connections);
                 }
-                connections.add(connection);
-                connectionsPerSignalInState.put(connection.getSignal(), connections);
             }
             mLocalSignalTransitionsPerSignalPerState.put(stateName, connectionsPerSignalInState);
         }
@@ -446,10 +463,12 @@ class Model {
                         messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown TO state "
                                 + connectionRef.getTo() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
                     }
-                    if (!mSignals.contains(new SignalRef(connectionRef.getSignal()))) {
-                        isValid = false;
-                        messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown SIGNAL "
-                                + connectionRef.getSignal() + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
+                    for (String signal : connectionRef.getSignals()) {
+                        if (!mSignals.contains(new SignalRef(signal))) {
+                            isValid = false;
+                            messager.printMessage(Diagnostic.Kind.MANDATORY_WARNING, errorTag + " - Unknown SIGNAL "
+                                + signal + " used in connection " + connectionRef.getName() + ". Do you have a typo?");
+                        }
                     }
                 }
             }
