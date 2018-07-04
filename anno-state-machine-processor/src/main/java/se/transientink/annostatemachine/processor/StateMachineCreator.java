@@ -668,14 +668,15 @@ final class StateMachineCreator {
             javaWriter.emitEmptyLine();
         }
 
-        if (anySignalConnectionsForState != null) {
+        if (anySignalConnectionsForState != null && anySignalConnectionsForState.size() > 0) {
             javaWriter.emitEmptyLine();
             for (ConnectionRef connection : anySignalConnectionsForState) {
                 emitTransitionCall(model, connection, javaWriter);
             }
+        } else {
+            javaWriter.emitStatement("return null");
         }
 
-        javaWriter.emitStatement("return null");
         javaWriter.endMethod();
     }
 
