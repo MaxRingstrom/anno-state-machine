@@ -213,7 +213,81 @@ A normal use case for this is error handling. Let's view an example machine that
 ![](global_connection_error_handling.png "Global connection error handling state machine")
 
 1. Two requests are chained together.
-- The first request gets a summary of something.
-- If the summary is received properly it then requests the details.
-- If any of the requests result in 400 (Bad request), 404 (Not found) or 500 (InternalServerError) the global connection will take care of error handling and transition the machine to the Idle state.
-- If the error occurs for the first request the global error connection makes sure that the next request is not run.
+2. The first request gets a summary of something.
+3. If the summary is received properly it then requests the details.
+4. If any of the requests result in 400 (Bad request), 404 (Not found) or 500 (InternalServerError) the global connection will take care of error handling and transition the machine to the Idle state.
+5. If the error occurs for the first request the global error connection makes sure that the next request is not run.
+
+### Spies
+It is possible to spy on a signal without affecting the state of the state machine. This is useful for logging purposes or other things not actively affecting state.
+```
+@Connection( from = "nameOfStateToListenIn", to = "*", on = "signalToListenFor")
+```
+
+Spies are always called, regardless of whether or not a connection takes ownership of a signal.
+
+### Auto connections
+It is possible for a connection to automatically transition the state machine to another state as soon as it is entered. This is useful for handling init scenarios or to divide a problem into multiple steps without relying on external signal processing.
+#### Init with auto transitions
+![](auto_transitions.png "Auto transition state machine")
+Here we have a state machine that handles requests.
+
+It has to start the server first before any requests can be handled. After it has started it receives a request, processes it and waits for another request.
+
+By using an auto transition here it is possible to automatically start the server when the state machine starts. The startServer connections "initializes" the Waiting state which allows the Waiting state to be returned to over and over without re-running the start server code.
+
+The state machine transitions to the Init state as it is the starting state. Directly without handling any other signals, the state machine transitions to the Waiting state via the startServer auto transition connection.
+```
+@Connection( from = "Init", to = "Waiting", on = "!")
+```
+#### Multiple steps using auto transitions
+![](auto_transitions_multiple_steps.png "Multiple steps by using auto transitions")
+
+This is an example of a state machine that relies very little on external signals. There's one signal **startPaintingItems** that has a list of items to paint as a payload. The following sequence of transitions will occur:
+1. The machine starts in the Idle state
+2. A list of items to paint arrives with the signal **startPaintingItems** and the machine transitions to the PickItem state.
+3. The **onNoMoreItems** connection is called which checks if there are items to paint. If it returns false(guard not satisfied) the **pickItem** connection will be called instead which picks an item to paint.
+4. The machine automatically transitions to the ItemRetrieved state
+5. The **chooseColor** connection is called which chooses a color for the current item
+6. The machine transitions to the ColorChosen state
+7. The **paint** connection is called which paints the item.
+8. The machine transitions to the ItemPainted state
+9. The **onItemPainted** connection is called
+10. The machine transitions to the PickItem state.
+11. Once again the **onNoMoreItems** connection gets a chance to see if all items are painted. If they are the machine transitions to the Idle state and a new **startPaintingItems** signal can be handled.
+
+The order of the **pickItem** and **onNoMoreItems** declarations matter here. If the onNoMoreItems is declared first, it'll be executed first to see if its guard is satisfied. If the order is reversed then the **pickItem** connection must have a guard checking that there are items.
+
+### Connection priority order
+* Connection types that are **Local** will be called before their **Global** counterparts.
+* Connections that react to specific signals are always called before those reacting to all signals.
+* If a signal is caught by a **transition type** connection and its guard is satisfied then no other **transitions** following it in the priority chain will be called.
+* Spies are __**always**__ called. This is different from transition type connections. No spy at any level will block another spy from receiving a signal.
+
+#### Priority list
+1. Local signal spies - Always called
+2. Local any signal spies - Always called
+3. Local signal transitions - Always called
+4. Local any signal transitions - Called if no guards in 3 are satisfied.
+5. Global signal spies - Always called
+6. Global any signal spies - Always called
+7. Global signal transitions - Called if no guards in 3 or 4 are satisfied
+8. Global any signal transitions - Called if no guards in 3, 4 or 7 are satisfied.
+9. OnExit
+10. OnEnter
+11. Auto connections
+
+Note: **The order of execution of the Connections within one group is defined by the order of their declaration in the state machine declaration class.**
+
+You can read more about basic connections on the Anno State Machine [wiki] (https://github.com/MaxRingstrom/anno-state-machine/wiki). You can find the sections "Basic Connections" and "Advanced Connections" in the manual.
+
+## Passing dependencies to the state machine code
+You can pass dependencies either as payload with your signals or in the constructor of your state machine declaration class.
+
+## Threading
+It is possible to run the state machine in three different modes.
+1. Calling thread
+2. Background queue
+3. Shared background queue (with other machines)
+
+See [Running on background threads](https://github.com/MaxRingstrom/anno-state-machine/wiki/Running-on-background-threads) on the wiki for more information.
