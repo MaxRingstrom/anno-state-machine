@@ -64,6 +64,8 @@ class VisWidget extends Component {
         if (nodes.length === 1) {
             console.log(this.state.graph.nodes[nodes[0]]);
             this.setState({selectedState : this.state.graph.nodes[nodes[0]]});
+        } else {
+          this.setState({selectedState : {label : "No selection"}});
         }
 
         if (edges.length >= 0) {
@@ -74,6 +76,9 @@ class VisWidget extends Component {
                 console.log(that.state.graph.edges[edgeId]);
                 connections.push(that.state.graph.edges[edgeId]);
             });
+            this.setState({selectedEdges : connections});
+        } else {
+          this.setState({selectedEdges : {}});
         }
     },
     stabilizationIterationsDone: function(event) {
@@ -89,6 +94,7 @@ class VisWidget extends Component {
         var newGraph = JSON.parse(event.target.value);
       } catch (error) {
         console.log("Not a complete state machine json");
+        this.setState({ selectedState: { label: "No selection"}, selectedEdges: []})
       }
       if (newGraph) {
         console.log(newGraph);
@@ -140,11 +146,16 @@ class VisWidget extends Component {
 
   render() {
     return (
-      <div className='Vis-Graph'>
-        <input type="text" onChange={this.handleModelInputChanged.bind(this)} />
-        <Graph graph={this.state.graph} graphConstructCount={this.state.graphConstructCount} options={this.state.options} events={this.events}/>
-        <div className="Vis-Graph-StateInfo">
-        <StateInformationWidget state={this.state.selectedState} connections={this.state.selectedEdges}/>
+      <div className='Graph-Page'>
+        <div class="Left-Pane">
+          <h2>State machine JSON:</h2>
+          <textarea onChange={this.handleModelInputChanged.bind(this)} />
+        </div>
+        <div className="Center-Pane" >
+          <Graph graph={this.state.graph} graphConstructCount={this.state.graphConstructCount} options={this.state.options} events={this.events}/>
+        </div>
+        <div className="State-Info">
+          <StateInformationWidget state={this.state.selectedState} connections={this.state.selectedEdges}/>
         </div>
       </div>
     );
